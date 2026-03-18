@@ -1,0 +1,87 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+logs/
+server.log
+
+# Database files (these will be recreated)
+*.db
+*.sqlite
+*.sqlite3
+
+# Test files
+test_*.py
+*_test.py
+test_*.docx
+test_*.pdf
+test_*.txt
+
+# Development scripts
+run.sh
+run.ps1
+run_prod.sh
+start_dev.sh
+setup_chat_engine.sh
+clear_db_session.py
+create_test_files.py
+fix_db_encoding.py
+reprocess_documents.py
+
+# Documentation
+*.md
+ARCHITECTURE.md
+CHAT_ENGINE_README.md
+IMPLEMENTATION_SUMMARY.md
+QUICKSTART.md
+
+# Git
+.git/
+.gitignore
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose.yml
+
+# Environment files (will be mounted or passed as env vars)
+# .env - removed so it's included in the Docker image
+.env.local
+.env.development
+.env.production
+
+# Temporary files
+temp/
+tmp/
+uploads/
+*.tmp
+
+# SQL files
+*.sql

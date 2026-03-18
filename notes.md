@@ -1,0 +1,1 @@
+1 Get the OpenAI Key from https://platform.openai.com/login
