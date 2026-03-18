@@ -1,8 +1,0 @@
-# Netlify-style redirects file for SPA routing
-# This ensures all routes are handled by index.html for client-side routing
-
-# Handle all paths that don't match static assets
-/*    /index.html   200
-
-# Alternative format for some hosting providers
-# /* /index.html 200
