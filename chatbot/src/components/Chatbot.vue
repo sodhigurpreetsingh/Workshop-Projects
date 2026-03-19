@@ -416,9 +416,9 @@ export default {
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: #003D82;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border: none;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -429,8 +429,8 @@ export default {
 
 .floating-button:hover {
   transform: scale(1.1);
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
-  background: #0052A3;
+  box-shadow: 0 12px 32px rgba(102, 126, 234, 0.5);
+  background: linear-gradient(135deg, #5568d3 0%, #6a3e94 100%);
 }
 
 .floating-button:active {
@@ -468,7 +468,7 @@ export default {
    Header
    ============================================================================= */
 .chat-header {
-  background: #003D82;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   padding: 16px 20px;
   display: flex;
@@ -476,6 +476,7 @@ export default {
   align-items: center;
   flex-shrink: 0;
   border-radius: 16px 16px 0 0;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
 }
 
 .header-content {
