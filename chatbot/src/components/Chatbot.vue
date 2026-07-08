@@ -18,11 +18,22 @@
         <div class="chat-header">
           <div class="header-content">
             <div class="header-icon">
-              <img src="../images/logo.png" alt="SVIET Logo" class="sviet-logo" />
+              <!-- Inline SVG mark — no external logo asset required -->
+              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path
+                  d="M12 3L2 8l10 5 8-4.09V17h2V8L12 3z"
+                  fill="currentColor"
+                />
+                <path
+                  d="M6 10.5V15c0 1.5 2.7 3 6 3s6-1.5 6-3v-4.5l-6 3-6-3z"
+                  fill="currentColor"
+                  opacity="0.55"
+                />
+              </svg>
             </div>
             <div class="header-text">
-              <div class="header-title">SVIET Assistant</div>
-              <div class="header-subtitle">Ask anything about SVIET</div>
+              <div class="header-title">Campus Assistant</div>
+              <div class="header-subtitle">Ask me about DIT</div>
             </div>
           </div>
           <button class="close-btn" @click="toggleChat" aria-label="Close chat">✕</button>
@@ -110,7 +121,7 @@
  * - Floating button UI (collapsed state)
  * - Full chat window (expanded state)
  * - RAG API integration via Axios
- * - PDF source citations display
+ * - Document source citations display
  * - Execution time metadata
  * - Auto-scroll to latest message
  * - Error handling
@@ -150,13 +161,13 @@ export default {
      * - role: 'user' | 'assistant'
      * - content: The message text
      * - timestamp: Date object
-     * - sources: Array of PDF sources (assistant only)
+     * - sources: Array of document sources (assistant only)
      * - metadata: Execution time and other stats (assistant only)
      */
     const messages = ref([
       {
         role: 'assistant',
-        content: 'Welcome to SVIET! 🎓 I can help answer questions about our programs, placements, facilities, and campus life. What would you like to know?',
+        content: 'Welcome to Demo Institute of Technology! 🎓 I can help answer questions about our programs, placements, facilities, and campus life. What would you like to know?',
         timestamp: new Date(),
       },
     ]);
@@ -360,8 +371,8 @@ export default {
      * -----------
      * Extracts filename from a full file path
      *
-     * @param {string} filePath - Full path to file (e.g., "/path/to/document.pdf")
-     * @returns {string} Filename only (e.g., "document.pdf")
+     * @param {string} filePath - Full path to file (e.g., "/path/to/document.txt")
+     * @returns {string} Filename only (e.g., "document.txt")
      */
     const getFileName = (filePath) => {
       if (!filePath) return 'Unknown';
@@ -407,39 +418,55 @@ export default {
 
 <style scoped>
 /* =============================================================================
+   Design tokens
+   ============================================================================= */
+.chat-window,
+.floating-button {
+  --cb-primary: #4f46e5;
+  --cb-primary-dark: #4338ca;
+  --cb-secondary: #8b5cf6;
+  --cb-accent: #10b981;
+  --cb-ink: #16181f;
+  --cb-ink-soft: #454a58;
+  --cb-muted: #6b7280;
+  --cb-border: #e8e9f2;
+  --cb-surface-2: #f7f7fb;
+  --cb-font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
+}
+
+/* =============================================================================
    Floating Button
    ============================================================================= */
 .floating-button {
   position: fixed;
   bottom: 24px;
   right: 24px;
-  width: 56px;
-  height: 56px;
+  width: 58px;
+  height: 58px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--cb-primary) 0%, var(--cb-secondary) 100%);
   border: none;
-  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 10px 28px rgba(79, 70, 229, 0.38);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s ease;
+  transition: all 0.25s ease;
   z-index: 9999;
 }
 
 .floating-button:hover {
-  transform: scale(1.1);
-  box-shadow: 0 12px 32px rgba(102, 126, 234, 0.5);
-  background: linear-gradient(135deg, #5568d3 0%, #6a3e94 100%);
+  transform: scale(1.08) translateY(-2px);
+  box-shadow: 0 14px 34px rgba(79, 70, 229, 0.46);
 }
 
 .floating-button:active {
-  transform: scale(0.95);
+  transform: scale(0.96);
 }
 
 .chat-icon {
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   color: white;
 }
 
@@ -450,33 +477,32 @@ export default {
   position: fixed;
   bottom: 100px;
   right: 24px;
-  width: 600px;
+  width: 400px;
   max-width: calc(100vw - 48px);
   min-height: 650px;
   max-height: 650px;
   background: white;
-  border-radius: 16px;
-  box-shadow: 0 5px 40px rgba(0, 0, 0, 0.16);
+  border-radius: 20px;
+  box-shadow: 0 24px 60px -14px rgba(30, 27, 75, 0.32), 0 4px 16px rgba(30, 27, 75, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.9);
   display: flex;
   flex-direction: column;
   overflow: hidden;
   z-index: 9999;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
+  font-family: var(--cb-font);
 }
 
 /* =============================================================================
    Header
    ============================================================================= */
 .chat-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(120deg, var(--cb-primary) 0%, var(--cb-secondary) 100%);
   color: white;
-  padding: 16px 20px;
+  padding: 16px 18px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   flex-shrink: 0;
-  border-radius: 16px 16px 0 0;
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
 }
 
 .header-content {
@@ -486,29 +512,32 @@ export default {
 }
 
 .header-icon {
-  font-size: 28px;
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.18);
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
-.sviet-logo {
-  width: 40px;
-  height: 48px;
-  object-fit: contain;
+.header-icon svg {
+  width: 21px;
+  height: 21px;
+  color: white;
 }
 
 .header-title {
   font-size: 15px;
-  font-weight: 600;
-  letter-spacing: 0.3px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.01em;
 }
 
 .header-subtitle {
   font-size: 12px;
-  opacity: 0.7;
-  margin-top: 2px;
+  opacity: 0.85;
+  margin-top: 1px;
   font-weight: 400;
 }
 
@@ -516,19 +545,21 @@ export default {
   background: none;
   border: none;
   color: white;
-  width: 32px;
-  height: 32px;
-  border-radius: 6px;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 20px;
+  font-size: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: background 0.2s;
+  opacity: 0.9;
 }
 
 .close-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.16);
+  opacity: 1;
 }
 
 /* =============================================================================
@@ -541,7 +572,7 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  background: white;
+  background: var(--cb-surface-2);
 }
 
 /* Custom scrollbar */
@@ -554,12 +585,12 @@ export default {
 }
 
 .chat-messages::-webkit-scrollbar-thumb {
-  background: #d0d0d0;
+  background: #d5d7e3;
   border-radius: 3px;
 }
 
 .chat-messages::-webkit-scrollbar-thumb:hover {
-  background: #a0a0a0;
+  background: #b7bad0;
 }
 
 /* =============================================================================
@@ -569,7 +600,7 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  animation: slideIn 0.3s ease;
+  animation: slideIn 0.25s ease;
 }
 
 .message.user {
@@ -581,36 +612,38 @@ export default {
 }
 
 .message-bubble {
-  max-width: 80%;
-  padding: 12px 16px;
-  border-radius: 12px;
+  max-width: 82%;
+  padding: 11px 15px;
+  border-radius: 14px;
   word-wrap: break-word;
-  line-height: 1.4;
+  line-height: 1.5;
   font-size: 13px;
 }
 
 .message.user .message-bubble {
-  background: #003D82;
+  background: linear-gradient(120deg, var(--cb-primary) 0%, var(--cb-secondary) 100%);
   color: white;
   border-bottom-right-radius: 4px;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
 }
 
 .message.assistant .message-bubble {
-  background: #f5f5f5;
-  color: #003D82;
+  background: white;
+  color: var(--cb-ink);
+  border: 1px solid var(--cb-border);
   border-bottom-left-radius: 4px;
 }
 
 .message-time {
-  font-size: 11px;
-  color: #999;
+  font-size: 10.5px;
+  color: var(--cb-muted);
   padding: 0 4px;
 }
 
 @keyframes slideIn {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
@@ -624,7 +657,9 @@ export default {
 .typing-message .message-bubble {
   display: flex;
   align-items: center;
-  padding: 8px 16px;
+  padding: 12px 16px;
+  background: white;
+  border: 1px solid var(--cb-border);
 }
 
 .typing-indicator {
@@ -637,7 +672,7 @@ export default {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #999;
+  background: var(--cb-secondary);
   animation: bounce 1.4s infinite;
 }
 
@@ -661,65 +696,66 @@ export default {
 }
 
 /* =============================================================================
-   PDF Sources
+   Document Sources
    ============================================================================= */
 .message-sources {
-  margin-top: 12px;
+  margin-top: 10px;
   font-size: 13px;
 }
 
 .sources-details {
-  background: #f5f5f5;
-  border-radius: 8px;
-  padding: 10px 12px;
-  border-left: 3px solid #E8731E;
+  background: var(--cb-surface-2);
+  border-radius: 10px;
+  padding: 9px 12px;
+  border-left: 3px solid var(--cb-primary);
   cursor: pointer;
 }
 
 .sources-summary {
   cursor: pointer;
   font-weight: 600;
-  color: #003D82;
+  font-size: 12.5px;
+  color: var(--cb-primary);
   user-select: none;
   list-style: none;
   outline: none;
 }
 
 .sources-summary:hover {
-  color: #404040;
+  color: var(--cb-primary-dark);
 }
 
 .sources-list {
-  margin-top: 12px;
+  margin-top: 10px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .source-item {
   background: white;
-  border-radius: 6px;
-  padding: 10px;
-  border: 1px solid #e0e0e0;
-  border-left: 3px solid #E8731E;
+  border-radius: 8px;
+  padding: 9px 10px;
+  border: 1px solid var(--cb-border);
+  border-left: 3px solid var(--cb-accent);
 }
 
 .source-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 6px;
+  margin-bottom: 5px;
 }
 
 .source-file {
-  color: #003D82;
-  font-size: 13px;
-  font-weight: 600;
+  color: var(--cb-ink);
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .source-preview {
-  color: #555;
-  font-size: 12px;
+  color: var(--cb-ink-soft);
+  font-size: 11.5px;
   line-height: 1.5;
   margin: 0;
 }
@@ -732,11 +768,12 @@ export default {
 }
 
 .metadata-badge {
-  font-size: 11px;
-  color: #666;
-  background: #e8e8e8;
-  padding: 4px 10px;
-  border-radius: 12px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--cb-primary);
+  background: rgba(79, 70, 229, 0.08);
+  padding: 3px 9px;
+  border-radius: 999px;
   display: inline-block;
 }
 
@@ -744,9 +781,9 @@ export default {
    Input Area
    ============================================================================= */
 .chat-input-area {
-  padding: 16px;
+  padding: 14px 16px;
   background: white;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--cb-border);
   flex-shrink: 0;
 }
 
@@ -758,11 +795,11 @@ export default {
 
 .chat-input {
   flex: 1;
-  background: #fafafa;
-  border: 1px solid #e0e0e0;
+  background: var(--cb-surface-2);
+  border: 1px solid var(--cb-border);
   border-radius: 999px;
-  padding: 12px 16px;
-  color: #003D82;
+  padding: 11px 16px;
+  color: var(--cb-ink);
   font-size: 13px;
   font-family: inherit;
   outline: none;
@@ -770,13 +807,13 @@ export default {
 }
 
 .chat-input:focus {
-  border-color: #E8731E;
-  box-shadow: 0 0 0 3px rgba(232, 115, 30, 0.15);
+  border-color: var(--cb-primary);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.13);
   background: white;
 }
 
 .chat-input::placeholder {
-  color: #9ca3af;
+  color: var(--cb-muted);
 }
 
 .chat-input:disabled {
@@ -786,10 +823,10 @@ export default {
 }
 
 .send-btn {
-  width: 46px;
-  height: 46px;
+  width: 44px;
+  height: 44px;
   border-radius: 12px;
-  background: #003D82;
+  background: linear-gradient(135deg, var(--cb-primary) 0%, var(--cb-secondary) 100%);
   border: none;
   cursor: pointer;
   display: flex;
@@ -798,10 +835,12 @@ export default {
   transition: all 0.2s;
   flex-shrink: 0;
   padding: 0;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
 }
 
 .send-btn:hover:not(:disabled) {
-  background: #0052A3;
+  filter: brightness(1.08);
+  transform: translateY(-1px);
 }
 
 .send-btn:active:not(:disabled) {
@@ -811,11 +850,12 @@ export default {
 .send-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+  box-shadow: none;
 }
 
 .send-icon {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   color: white;
 }
 
@@ -824,17 +864,17 @@ export default {
    ============================================================================= */
 .slide-up-enter-active,
 .slide-up-leave-active {
-  transition: all 0.3s ease;
+  transition: all 0.25s ease;
 }
 
 .slide-up-enter-from {
   opacity: 0;
-  transform: translateY(30px);
+  transform: translateY(24px) scale(0.98);
 }
 
 .slide-up-leave-to {
   opacity: 0;
-  transform: translateY(30px);
+  transform: translateY(24px) scale(0.98);
 }
 
 /* =============================================================================
@@ -848,7 +888,7 @@ export default {
     right: 12px;
     max-height: 80vh;
     min-height: auto;
-    border-radius: 16px 16px 0 0;
+    border-radius: 20px 20px 0 0;
   }
 
   .floating-button {

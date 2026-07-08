@@ -1,5 +1,5 @@
 #!/bin/bash
-# Start the backend server for SVIET Workshop
+# Start the backend server for the RAG Chat & Resume Analyzer Demo
 # Usage: ./start_backend.sh
 
 set -e
@@ -33,5 +33,5 @@ fi
 pip install -r requirements.txt --quiet
 
 # Start the server
-echo "Starting SVIET Workshop backend on http://127.0.0.1:8000"
+echo "Starting backend on http://127.0.0.1:8000"
 uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload

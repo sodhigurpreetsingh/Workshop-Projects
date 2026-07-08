@@ -1,97 +1,73 @@
-# SVIET Chatbot Branding
+# Campus Assistant Branding
+
+This chatbot is a generic, reusable demo built for **Demo Institute of Technology (DIT)**
+— a fictional college used for teaching purposes. Swap the content in
+`backend/app/documents/txts/` and the text below to point it at any institution.
 
 ## Logo
-- **Location:** `src/images/sviet-logo.svg`
-- **Design:** Based on official SVIET logo with:
-  - Orange top section (#E8731E) with knowledge tree symbol
-  - Blue bottom section (#003D82) with open book
-  - "Swami Vivekanand Group of Institutes" text
+
+No external logo asset is used. The header icon is an inline SVG mortarboard
+mark defined directly in `src/components/Chatbot.vue`, styled to sit on a
+translucent white tile over the gradient header. This keeps the component
+fully self-contained — no image files to swap when re-branding.
 
 ## Color Palette
 
+Matches the design system used across the other MSET workshop demo assets.
+
 ### Primary Colors
-- **Navy Blue:** `#003D82` - Primary brand color
-  - Used for: Header background, buttons, text
-- **Orange:** `#E8731E` - Accent color
-  - Used for: Borders, highlights, hover states
+- **Indigo:** `#4f46e5` (`--cb-primary`) — header, buttons, user message bubbles
+- **Violet:** `#8b5cf6` (`--cb-secondary`) — paired with indigo in gradients
+- **Emerald:** `#10b981` (`--cb-accent`) — source citation accent border
 
-### Hover States
-- **Light Blue:** `#0052A3` - Button/header hover
-- **Orange with opacity:** `rgba(232, 115, 30, 0.15)` - Input focus
+### Hover / Focus States
+- **Indigo (darker):** `#4338ca` (`--cb-primary-dark`)
+- **Focus ring:** `rgba(79, 70, 229, 0.13)` — input focus glow
 
-### Neutral Colors
-- **White:** `#FFFFFF` - Message bubbles, backgrounds
-- **Light Gray:** `#F5F5F5` - Assistant message background
-- **Gray:** `#999999` - Timestamps, metadata
+### Neutrals
+- **Ink:** `#16181f` (`--cb-ink`) — primary text
+- **Ink soft:** `#454a58` (`--cb-ink-soft`) — secondary text
+- **Muted:** `#6b7280` (`--cb-muted`) — timestamps, metadata
+- **Surface 2:** `#f7f7fb` (`--cb-surface-2`) — messages background
 
 ## Typography
 
 **Font Stack:**
 ```css
-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
+font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
 ```
+Inter is loaded via Google Fonts in `index.html`; the stack falls back
+gracefully to system fonts if it fails to load.
 
 **Font Sizes:**
-- Header title: 15px (600 weight)
+- Header title: 15px (700 weight)
 - Header subtitle: 12px (400 weight)
 - Message text: 13px
-- Timestamps: 11px
-- Metadata badges: 11px
+- Timestamps: 10.5px
+- Metadata badges: 10.5px
 
-## Component Updates
+## Component Content
 
 ### Header
-- **Icon:** SVIET logo (40px × 48px)
-- **Title:** "SVIET Assistant"
-- **Subtitle:** "Ask anything about SVIET"
+- **Icon:** inline SVG mortarboard mark
+- **Title:** "Campus Assistant"
+- **Subtitle:** "Ask me about DIT"
 
 ### Welcome Message
-"Welcome to SVIET! 🎓 I can help answer questions about our programs, placements, facilities, and campus life. What would you like to know?"
+"Welcome to Demo Institute of Technology! 🎓 I can help answer questions about
+our programs, placements, facilities, and campus life. What would you like to know?"
 
 ### Input Placeholder
 "Ask about programs, placements, facilities..."
 
 ### Sources Display
-- Removed "Page" references (using TXT files)
-- Shows document name and content preview
-- Orange accent border on sources
+- Shows document name and content preview (no page numbers — plain-text sources)
+- Emerald accent border on source cards
 
-## UI Elements
+## Re-branding for a Different Institution
 
-### Floating Button
-- Background: #003D82
-- Hover: #0052A3
-- Icon: Chat bubble SVG
-
-### Message Bubbles
-- **User messages:**
-  - Background: #003D82 (navy blue)
-  - Color: White
-  - Aligned: Right
-
-- **Assistant messages:**
-  - Background: #F5F5F5 (light gray)
-  - Color: #003D82 (navy blue)
-  - Aligned: Left
-
-### Input Field
-- Border: #E0E0E0
-- Focus border: #E8731E (orange)
-- Focus shadow: Orange with 15% opacity
-
-### Send Button
-- Background: #003D82
-- Hover: #0052A3
-- Icon: Send arrow (white)
-
-## Professional Styling
-
-- Clean, modern interface
-- Professional education institution appearance
-- Smooth animations and transitions
-- Accessible color contrast
-- Mobile responsive design
-
-## Files Modified
-- `src/components/Chatbot.vue` - Main component
-- `src/images/sviet-logo.svg` - Official logo
+To point this at a real (or different demo) institution:
+1. Update the header title/subtitle and welcome message in `src/components/Chatbot.vue`
+2. Update the color variables at the top of the `<style>` block in the same file
+3. Replace the content in `backend/app/documents/txts/*.txt` with the new institution's facts
+4. Restart the backend — documents are re-indexed in memory on startup, no cache to clear
