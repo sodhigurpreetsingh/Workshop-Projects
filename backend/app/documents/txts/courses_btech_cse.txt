@@ -1,0 +1,16 @@
+Demo Institute of Technology - B.Tech Computer Science & Engineering (CSE)
+
+Duration: 4 years | Intake: 120 seats
+Eligibility: 10+2 PCM with 60%+ | Fee: ~Rs. 80,000–1,00,000/year
+
+Key Subjects: C/Java/Python programming, Data Structures, Algorithms, DBMS, Operating Systems, Computer Networks, Software Engineering, AI/ML, Web Technologies, Cloud Computing, Cybersecurity
+
+Electives (final year): Data Science, IoT, Mobile Development, Blockchain, DevOps
+
+Labs: Programming Lab, AI/ML Lab, Networking Lab, Cloud Lab, Cybersecurity Lab
+
+Placements: Average 4–6 LPA | Highest 12 LPA (2024) | Recruiters: TCS, Infosys, Wipro, HCL, Capgemini, Accenture, Tech Mahindra
+
+Career roles: Software Developer, Full Stack Developer, Data Analyst, DevOps Engineer, ML Engineer
+
+Minimum CGPA for placement drives: 7.0

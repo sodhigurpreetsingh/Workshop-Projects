@@ -1,60 +1,42 @@
 """
 Resume Analysis Service
 ========================
-This module implements AI-powered resume analysis using OpenAI GPT LLM.
-
-Features:
-- Text extraction from PDF, DOC, DOCX files
-- AI-powered resume analysis
-- ATS score calculation
-- Strengths and weaknesses identification
-- Actionable suggestions for improvement
+AI-powered resume analysis using OpenAI GPT.
+Extracts text from PDF/DOCX, sends to GPT, returns structured feedback.
 """
 import logging
 import os
 import io
 import json
 from typing import Dict, Any
-from pathlib import Path
 
 from langchain_openai import ChatOpenAI
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-# Set OpenAI API key
 if settings.OPENAI_API_KEY:
     os.environ["OPENAI_API_KEY"] = settings.OPENAI_API_KEY
 
+# Truncate resume text to ~3000 chars before sending to the LLM — keeps
+# token usage predictable and avoids hitting context limits on large PDFs.
+MAX_RESUME_CHARS = 3000
+
 
 class ResumeService:
-    """
-    AI-powered Resume Analysis Service using OpenAI GPT.
-
-    This service handles:
-    - Text extraction from various file formats
-    - Resume analysis using GPT LLM
-    - Structured feedback generation
-    """
+    """AI-powered resume analysis: extract text → GPT analysis → structured feedback."""
 
     def __init__(self):
-        """Initialize the resume analysis service."""
         self.llm = None
         self._initialize_llm()
         logger.info("ResumeService initialized")
 
     def _initialize_llm(self):
-        """
-        Initialize GPT LLM for resume analysis.
-
-        Raises:
-            Exception: If OpenAI initialization fails
-        """
         try:
             self.llm = ChatOpenAI(
                 model=settings.OPENAI_MODEL_ID,
-                temperature=0.5,
-                max_tokens=3000
+                temperature=0.3,   # lower = more consistent, factual output
+                max_tokens=800     # sufficient for structured JSON feedback
             )
             logger.info(f"GPT LLM initialized: {settings.OPENAI_MODEL_ID}")
         except Exception as e:
@@ -62,274 +44,100 @@ class ResumeService:
             raise
 
     def _extract_text_from_pdf(self, file_content: bytes) -> str:
-        """
-        Extract text from PDF file.
-
-        Args:
-            file_content (bytes): PDF file content
-
-        Returns:
-            str: Extracted text
-
-        Raises:
-            Exception: If PDF extraction fails
-        """
         try:
             import PyPDF2
-            pdf_file = io.BytesIO(file_content)
-            pdf_reader = PyPDF2.PdfReader(pdf_file)
-
-            text = ""
-            for page in pdf_reader.pages:
-                text += page.extract_text() + "\n"
-
-            return text.strip()
+            reader = PyPDF2.PdfReader(io.BytesIO(file_content))
+            return "\n".join(page.extract_text() or "" for page in reader.pages).strip()
         except ImportError:
-            raise Exception("PyPDF2 is required for PDF processing. Install it with: pip install PyPDF2")
+            raise Exception("PyPDF2 not installed. Run: pip install PyPDF2")
         except Exception as e:
-            logger.error(f"Error extracting text from PDF: {e}")
-            raise Exception(f"Failed to extract text from PDF: {str(e)}")
+            raise Exception(f"Failed to read PDF: {e}")
 
     def _extract_text_from_docx(self, file_content: bytes) -> str:
-        """
-        Extract text from DOCX file.
-
-        Args:
-            file_content (bytes): DOCX file content
-
-        Returns:
-            str: Extracted text
-
-        Raises:
-            Exception: If DOCX extraction fails
-        """
         try:
             import docx
-            doc_file = io.BytesIO(file_content)
-            doc = docx.Document(doc_file)
-
-            text = ""
-            for paragraph in doc.paragraphs:
-                text += paragraph.text + "\n"
-
-            return text.strip()
+            doc = docx.Document(io.BytesIO(file_content))
+            return "\n".join(p.text for p in doc.paragraphs).strip()
         except ImportError:
-            raise Exception("python-docx is required for DOCX processing. Install it with: pip install python-docx")
+            raise Exception("python-docx not installed. Run: pip install python-docx")
         except Exception as e:
-            logger.error(f"Error extracting text from DOCX: {e}")
-            raise Exception(f"Failed to extract text from DOCX: {str(e)}")
-
-    def _extract_text_from_doc(self, file_content: bytes) -> str:
-        """
-        Extract text from DOC file.
-
-        Note: DOC format is legacy and harder to parse. This is a basic implementation.
-
-        Args:
-            file_content (bytes): DOC file content
-
-        Returns:
-            str: Extracted text
-
-        Raises:
-            Exception: If DOC extraction fails
-        """
-        raise Exception("Legacy .doc format is not fully supported. Please convert to .docx or .pdf format.")
+            raise Exception(f"Failed to read DOCX: {e}")
 
     def _extract_text(self, file_content: bytes, filename: str) -> str:
-        """
-        Extract text from resume file based on extension.
-
-        Args:
-            file_content (bytes): File content
-            filename (str): Original filename
-
-        Returns:
-            str: Extracted text content
-
-        Raises:
-            Exception: If text extraction fails
-        """
-        file_ext = filename.lower().split('.')[-1]
-
-        if file_ext == 'pdf':
+        ext = filename.lower().rsplit(".", 1)[-1]
+        if ext == "pdf":
             return self._extract_text_from_pdf(file_content)
-        elif file_ext == 'docx':
+        elif ext == "docx":
             return self._extract_text_from_docx(file_content)
-        elif file_ext == 'doc':
-            return self._extract_text_from_doc(file_content)
-        else:
-            raise Exception(f"Unsupported file format: {file_ext}")
+        elif ext == "doc":
+            raise Exception("Legacy .doc format is not supported. Please convert to .docx or .pdf.")
+        raise Exception(f"Unsupported file format: .{ext}")
 
     async def analyze_resume(self, file_content: bytes, filename: str) -> Dict[str, Any]:
-        """
-        Analyze a resume using GPT LLM.
+        """Extract text from resume file and return GPT analysis."""
+        logger.info(f"Extracting text from {filename}")
+        resume_text = self._extract_text(file_content, filename)
 
-        Args:
-            file_content (bytes): Resume file content
-            filename (str): Original filename
+        if len(resume_text.strip()) < 50:
+            raise Exception("Could not extract enough text. The file may be empty, image-based, or corrupted.")
 
-        Returns:
-            Dict[str, Any]: Structured analysis containing:
-                - ats_score (int): ATS compatibility score (0-100)
-                - strengths (list): List of strengths
-                - weaknesses (list): List of weaknesses
-                - suggestions (list): Actionable improvement suggestions
-                - summary (str): Overall summary
-                - keywords (list): Key skills and keywords found
+        # Truncate to keep token usage bounded
+        if len(resume_text) > MAX_RESUME_CHARS:
+            resume_text = resume_text[:MAX_RESUME_CHARS] + "\n[truncated]"
 
-        Raises:
-            Exception: If analysis fails
-        """
-        try:
-            # Extract text from resume
-            logger.info(f"Extracting text from {filename}")
-            resume_text = self._extract_text(file_content, filename)
+        prompt = self._build_prompt(resume_text)
 
-            if not resume_text or len(resume_text.strip()) < 50:
-                raise Exception("Could not extract sufficient text from resume. The file may be empty or corrupted.")
+        logger.info("Sending resume to GPT for analysis")
+        # Use ainvoke since this runs inside an async FastAPI route
+        response = await self.llm.ainvoke(prompt)
+        return self._parse_response(response.content.strip())
 
-            # Create analysis prompt
-            prompt = self._create_analysis_prompt(resume_text)
+    def _build_prompt(self, resume_text: str) -> str:
+        return f"""You are a professional resume reviewer. Analyze the resume below and respond ONLY with a valid JSON object — no extra text.
 
-            # Get analysis from GPT
-            logger.info("Analyzing resume with GPT LLM")
-            response = self.llm.invoke(prompt)
-            analysis_text = response.content.strip()
-
-            # Parse the structured response
-            analysis = self._parse_analysis(analysis_text)
-
-            return analysis
-
-        except Exception as e:
-            logger.error(f"Error analyzing resume: {e}")
-            raise
-
-    def _create_analysis_prompt(self, resume_text: str) -> str:
-        """
-        Create a structured prompt for resume analysis.
-
-        Args:
-            resume_text (str): Extracted resume text
-
-        Returns:
-            str: Formatted prompt for GPT
-        """
-        prompt = f"""You are an expert resume analyst and career coach. Analyze the following resume and provide detailed feedback.
-
-Resume Content:
+Resume:
 {resume_text}
 
-Please analyze this resume and provide your response in the following JSON format:
+JSON format:
 {{
-    "ats_score": <number between 0-100>,
-    "strengths": [
-        "strength 1",
-        "strength 2",
-        "strength 3"
-    ],
-    "weaknesses": [
-        "weakness 1",
-        "weakness 2",
-        "weakness 3"
-    ],
-    "suggestions": [
-        "suggestion 1",
-        "suggestion 2",
-        "suggestion 3"
-    ],
-    "summary": "A comprehensive summary of the resume analysis",
-    "keywords": ["keyword1", "keyword2", "keyword3"]
+  "ats_score": <integer 0–100>,
+  "strengths": ["...", "...", "..."],
+  "weaknesses": ["...", "...", "..."],
+  "suggestions": ["...", "...", "..."],
+  "summary": "2–3 sentence overall assessment",
+  "keywords": ["skill1", "skill2", "skill3", "skill4", "skill5"]
 }}
 
-Analysis Guidelines:
-1. ATS Score: Rate the resume's compatibility with Applicant Tracking Systems (0-100). Consider:
-   - Use of standard section headings
-   - Keyword optimization
-   - Format compatibility
-   - Clear structure
+Rules:
+- ats_score: ATS compatibility (standard headings, keywords, clean format)
+- strengths / weaknesses / suggestions: 3–4 items each, concise and specific
+- keywords: 5–8 skills or qualifications found in the resume
+- Respond with JSON only."""
 
-2. Strengths: Identify 3-5 strong points such as:
-   - Clear achievements with quantifiable results
-   - Relevant skills and experience
-   - Professional formatting
-   - Strong action verbs
-
-3. Weaknesses: Identify 3-5 areas that need improvement:
-   - Missing information
-   - Formatting issues
-   - Lack of quantifiable achievements
-   - Unclear descriptions
-
-4. Suggestions: Provide 3-5 actionable recommendations:
-   - Specific changes to make
-   - Content to add or modify
-   - Formatting improvements
-
-5. Summary: Write a 2-3 sentence overall assessment
-
-6. Keywords: Extract 5-10 key skills, technologies, or qualifications found in the resume
-
-Respond ONLY with valid JSON. Do not include any text before or after the JSON object."""
-
-        return prompt
-
-    def _parse_analysis(self, analysis_text: str) -> Dict[str, Any]:
-        """
-        Parse the LLM response into structured data.
-
-        Args:
-            analysis_text (str): Raw response from GPT
-
-        Returns:
-            Dict[str, Any]: Parsed analysis
-
-        Raises:
-            Exception: If parsing fails
-        """
+    def _parse_response(self, text: str) -> Dict[str, Any]:
         try:
-            # Try to find JSON in the response
-            start_idx = analysis_text.find('{')
-            end_idx = analysis_text.rfind('}') + 1
+            start = text.find("{")
+            end = text.rfind("}") + 1
+            if start == -1 or end == 0:
+                raise ValueError("No JSON in response")
+            result = json.loads(text[start:end])
+        except (json.JSONDecodeError, ValueError) as e:
+            logger.error(f"JSON parse failed: {e} | raw: {text[:200]}")
+            result = {}
 
-            if start_idx == -1 or end_idx == 0:
-                raise Exception("No JSON found in response")
+        defaults = {
+            "ats_score": 0,
+            "strengths": [],
+            "weaknesses": [],
+            "suggestions": [],
+            "summary": "Analysis could not be completed. Please try again.",
+            "keywords": [],
+        }
+        for key, default in defaults.items():
+            result.setdefault(key, default)
 
-            json_str = analysis_text[start_idx:end_idx]
-            analysis = json.loads(json_str)
-
-            # Validate required fields
-            required_fields = ['ats_score', 'strengths', 'weaknesses', 'suggestions', 'summary', 'keywords']
-            for field in required_fields:
-                if field not in analysis:
-                    logger.warning(f"Missing field in analysis: {field}")
-                    if field == 'ats_score':
-                        analysis[field] = 0
-                    elif field == 'summary':
-                        analysis[field] = "Analysis completed"
-                    else:
-                        analysis[field] = []
-
-            # Ensure ats_score is an integer between 0-100
-            analysis['ats_score'] = max(0, min(100, int(analysis['ats_score'])))
-
-            return analysis
-
-        except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse JSON from LLM response: {e}")
-            logger.error(f"Response text: {analysis_text}")
-
-            # Return a basic analysis if parsing fails
-            return {
-                "ats_score": 50,
-                "strengths": ["Resume received successfully"],
-                "weaknesses": ["Could not perform detailed analysis"],
-                "suggestions": ["Please try uploading again or contact support"],
-                "summary": "Analysis could not be completed. Please try again.",
-                "keywords": []
-            }
+        result["ats_score"] = max(0, min(100, int(result["ats_score"])))
+        return result
 
 
-# Create singleton instance
 resume_service = ResumeService()

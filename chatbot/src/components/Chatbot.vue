@@ -418,19 +418,19 @@ export default {
 
 <style scoped>
 /* =============================================================================
-   Design tokens
+   Design tokens — matches DIT brand (blue + orange)
    ============================================================================= */
 .chat-window,
 .floating-button {
-  --cb-primary: #4f46e5;
-  --cb-primary-dark: #4338ca;
-  --cb-secondary: #8b5cf6;
-  --cb-accent: #10b981;
-  --cb-ink: #16181f;
-  --cb-ink-soft: #454a58;
-  --cb-muted: #6b7280;
-  --cb-border: #e8e9f2;
-  --cb-surface-2: #f7f7fb;
+  --cb-primary:     #003580;
+  --cb-primary-dark:#002460;
+  --cb-secondary:   #0052a3;
+  --cb-accent:      #e8531e;
+  --cb-ink:         #1a1f2e;
+  --cb-ink-soft:    #4a5568;
+  --cb-muted:       #718096;
+  --cb-border:      #e2e8f0;
+  --cb-surface-2:   #f7f8fc;
   --cb-font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
 }
 
@@ -441,12 +441,12 @@ export default {
   position: fixed;
   bottom: 24px;
   right: 24px;
-  width: 58px;
-  height: 58px;
+  width: 60px;
+  height: 60px;
   border-radius: 50%;
   background: linear-gradient(135deg, var(--cb-primary) 0%, var(--cb-secondary) 100%);
   border: none;
-  box-shadow: 0 10px 28px rgba(79, 70, 229, 0.38);
+  box-shadow: 0 10px 28px rgba(0, 53, 128, 0.42);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -457,7 +457,7 @@ export default {
 
 .floating-button:hover {
   transform: scale(1.08) translateY(-2px);
-  box-shadow: 0 14px 34px rgba(79, 70, 229, 0.46);
+  box-shadow: 0 14px 34px rgba(0, 53, 128, 0.52);
 }
 
 .floating-button:active {
@@ -498,11 +498,12 @@ export default {
 .chat-header {
   background: linear-gradient(120deg, var(--cb-primary) 0%, var(--cb-secondary) 100%);
   color: white;
-  padding: 16px 18px;
+  padding: 18px 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   flex-shrink: 0;
+  border-bottom: 3px solid var(--cb-accent);
 }
 
 .header-content {
@@ -624,7 +625,7 @@ export default {
   background: linear-gradient(120deg, var(--cb-primary) 0%, var(--cb-secondary) 100%);
   color: white;
   border-bottom-right-radius: 4px;
-  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+  box-shadow: 0 4px 12px rgba(0, 53, 128, 0.25);
 }
 
 .message.assistant .message-bubble {
@@ -669,10 +670,10 @@ export default {
 }
 
 .typing-indicator span {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
-  background: var(--cb-secondary);
+  background: var(--cb-primary);
   animation: bounce 1.4s infinite;
 }
 
@@ -707,7 +708,7 @@ export default {
   background: var(--cb-surface-2);
   border-radius: 10px;
   padding: 9px 12px;
-  border-left: 3px solid var(--cb-primary);
+  border-left: 3px solid var(--cb-accent);
   cursor: pointer;
 }
 
@@ -715,14 +716,14 @@ export default {
   cursor: pointer;
   font-weight: 600;
   font-size: 12.5px;
-  color: var(--cb-primary);
+  color: var(--cb-accent);
   user-select: none;
   list-style: none;
   outline: none;
 }
 
 .sources-summary:hover {
-  color: var(--cb-primary-dark);
+  color: #c94418;
 }
 
 .sources-list {
@@ -771,7 +772,7 @@ export default {
   font-size: 10.5px;
   font-weight: 600;
   color: var(--cb-primary);
-  background: rgba(79, 70, 229, 0.08);
+  background: rgba(0, 53, 128, 0.08);
   padding: 3px 9px;
   border-radius: 999px;
   display: inline-block;
@@ -808,7 +809,7 @@ export default {
 
 .chat-input:focus {
   border-color: var(--cb-primary);
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.13);
+  box-shadow: 0 0 0 3px rgba(0, 53, 128, 0.12);
   background: white;
 }
 
@@ -825,8 +826,8 @@ export default {
 .send-btn {
   width: 44px;
   height: 44px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, var(--cb-primary) 0%, var(--cb-secondary) 100%);
+  border-radius: 10px;
+  background: var(--cb-accent);
   border: none;
   cursor: pointer;
   display: flex;
@@ -835,12 +836,13 @@ export default {
   transition: all 0.2s;
   flex-shrink: 0;
   padding: 0;
-  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+  box-shadow: 0 4px 12px rgba(232, 83, 30, 0.38);
 }
 
 .send-btn:hover:not(:disabled) {
-  filter: brightness(1.08);
+  background: #c94418;
   transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(232, 83, 30, 0.48);
 }
 
 .send-btn:active:not(:disabled) {
