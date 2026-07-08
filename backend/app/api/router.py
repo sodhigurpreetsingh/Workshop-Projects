@@ -14,7 +14,7 @@ Current route modules:
 - resume: AI resume analysis endpoints (/resume/analyze)
 """
 from fastapi import APIRouter
-from app.api.routes import chat, resume
+from app.api.routes import chat, resume, quiz
 
 # =============================================================================
 # Create Main API Router
@@ -41,6 +41,13 @@ api_router.include_router(chat.router)
 # - GET /resume/health - Health check
 # Mounted at: /api/v1/resume/* (when API prefix is /api/v1)
 api_router.include_router(resume.router)
+
+# Quiz Routes - MCQ generation from topic or notes
+# Includes:
+# - POST /quiz/generate - Generate MCQ questions
+# - GET  /quiz/health   - Health check
+# Mounted at: /api/v1/quiz/*
+api_router.include_router(quiz.router)
 
 # =============================================================================
 # Health Check Endpoint
