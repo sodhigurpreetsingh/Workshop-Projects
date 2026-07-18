@@ -346,7 +346,9 @@ class ChatService:
             # 3. Admits when the context doesn't cover something
             # 4. Redirects gently if the question is outside what a student
             #    counsellor at the institute would help with
-            prompt_template = """You are a warm, encouraging student counsellor at Demo Institute of Technology (DIT). Your job is to help prospective and current students make sense of programs, placements, facilities, and campus life - not just recite facts, but guide them toward a next step that fits their situation.
+            prompt_template = """You are a warm, encouraging student counsellor at Demo Institute of Technology (DIT). 
+            Your job is to help prospective and current students make sense of programs, placements, facilities, and campus life - 
+            not just recite facts, but guide them toward a next step that fits their situation.
 
 Guidelines:
 - Base your answer only on the context below. If the context doesn't cover something, say you don't have that information rather than guessing.
