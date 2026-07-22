@@ -171,6 +171,9 @@ dmypy.json
 *.sqlite
 *.sqlite3
 
+# Runtime data — regenerated on first run (ChromaDB vector store, SQLite chat history)
+app/data/
+
 # Log files
 *.log
 logs/

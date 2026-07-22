@@ -1,19 +1,21 @@
 <template>
   <!-- Root application container -->
   <div id="app">
-    <!--
-      Demo college homepage — purely a backdrop so the chatbot isn't
-      floating on a blank white screen during the demo. Not part of the
-      RAG system; the chatbot answers only from backend/app/documents/txts.
-    -->
-    <HomePage />
+    <AdminDashboard v-if="isAdmin" />
+    <template v-else>
+      <!--
+        CU homepage — a branded backdrop so the chatbot isn't
+        floating on a blank white screen during the demo.
+      -->
+      <HomePage />
 
-    <!--
-      Main chatbot component
-      Renders as a floating button in the bottom-right corner
-      When clicked, opens a chat window for RAG-based Q&A
-    -->
-    <Chatbot />
+      <!--
+        Main chatbot component
+        Renders as a floating button in the bottom-right corner.
+        When clicked, opens a chat window for RAG-based Q&A.
+      -->
+      <Chatbot />
+    </template>
   </div>
 </template>
 
@@ -21,25 +23,22 @@
 /**
  * App.vue - Root Component
  * =========================
- * This is the root component that wraps the entire application.
- * It renders a demo college homepage (background) plus the Chatbot
- * component, which handles all the chat functionality as a floating
- * widget on top of it.
- *
- * The Chatbot component is self-contained and includes:
- * - Floating button (collapsed state)
- * - Chat window (expanded state)
- * - API integration for RAG queries
- * - Document source display
- * - Message history
+ * Renders the CU Admin Dashboard at /admin, or the CU homepage
+ * with the floating chatbot widget on all other routes.
  */
 
+import { ref } from 'vue'
 import Chatbot from './components/Chatbot.vue'
 import HomePage from './components/HomePage.vue'
+import AdminDashboard from './components/AdminDashboard.vue'
 
 export default {
   name: 'App',
-  components: { Chatbot, HomePage }
+  components: { Chatbot, HomePage, AdminDashboard },
+  setup() {
+    const isAdmin = ref(window.location.pathname.startsWith('/admin'))
+    return { isAdmin }
+  }
 }
 </script>
 
@@ -47,8 +46,8 @@ export default {
 /*
  * Global Styles
  * =============
- * Ensure full height for the app container and remove default margins
- * This allows the floating chatbot button to position correctly
+ * Ensure full height for the app container and remove default margins.
+ * This allows the floating chatbot button to position correctly.
  */
 html, body, #app {
   height: 100%;

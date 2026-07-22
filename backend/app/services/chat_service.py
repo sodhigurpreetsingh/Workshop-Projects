@@ -1,30 +1,36 @@
 """
-RAG-based Chat Service
-======================
+RAG-based Chat Service (ChromaDB)
+==================================
 This module implements a Retrieval Augmented Generation (RAG) system for answering
-questions based on TXT documents using OpenAI.
+questions about Chandigarh University using OpenAI and ChromaDB.
 
 RAG Pipeline:
-1. Load TXT documents
+1. Load TXT documents from app/documents/txts/
 2. Split documents into chunks
-3. Create vector embeddings using OpenAI Embeddings
-4. Store embeddings in FAISS vector database
+3. Create vector embeddings using OpenAI text-embedding-3-small
+4. Persist embeddings in ChromaDB (app/data/chroma/)
 5. Retrieve relevant context for user questions
 6. Generate answers using GPT LLM with retrieved context
 """
+import json
 import logging
 import os
+import re
+import time
+from datetime import timezone
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
-# LangChain imports for RAG pipeline
+# LangChain OpenAI imports
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-from langchain_community.document_loaders import TextLoader
-from langchain_community.vectorstores import FAISS
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_core.documents import Document
+
+# ChromaDB
+import chromadb
+from chromadb.config import Settings as ChromaSettings
 
 from app.core.config import settings
+from app.core.db import SessionLocal
+from app.models.conversation import ConversationTurn
 
 # Initialize logger for this module
 logger = logging.getLogger(__name__)
@@ -32,449 +38,581 @@ logger = logging.getLogger(__name__)
 # =============================================================================
 # OpenAI API Key Setup
 # =============================================================================
-# Bridge pydantic settings → OS environment variables for OpenAI API key
-# This is necessary because OpenAI SDK reads credentials from environment
-# variables, but our settings come from .env file via pydantic
 if settings.OPENAI_API_KEY:
     os.environ["OPENAI_API_KEY"] = settings.OPENAI_API_KEY
+
+# ChromaDB persist directory (relative to where the server runs, i.e. backend/)
+CHROMA_PERSIST_PATH = "./app/data/chroma"
+CHROMA_COLLECTION_NAME = "cu_knowledge"
+CHUNK_SIZE = 500
+CHUNK_OVERLAP = 100
+
+
+def _slug(text: str) -> str:
+    """Convert text to a URL-safe slug."""
+    text = text.lower().strip()
+    text = re.sub(r"[^a-z0-9]+", "_", text)
+    return text.strip("_")
+
+
+# =============================================================================
+# Smart CTA detection
+# =============================================================================
+# Simple post-hoc keyword matching on the question (same technique used by
+# the reference rag-saas chatbot) — no LLM function-calling involved. Checked
+# in priority order; first match wins. All URLs are real CU contact points
+# pulled from app/documents/txts/admissions.txt and scholarships.txt.
+_ACTION_RULES = [
+    (
+        "callback",
+        ["call back", "callback", "talk to someone", "counsellor", "counselor", "speak to", "contact number", "contact me"],
+        {"type": "callback", "buttonText": "Call Admissions", "url": "tel:1800-1212-88800"},
+    ),
+    (
+        "apply",
+        ["apply", "admission", "enroll", "enrol", "cucet", "register"],
+        {"type": "apply", "buttonText": "Apply Now →", "url": "https://cucet.cuchd.in"},
+    ),
+    (
+        "scholarship",
+        ["scholarship", "fee waiver", "financial aid"],
+        {"type": "scholarship", "buttonText": "View Scholarship Details →", "url": "https://cuchd.in/scholarship/"},
+    ),
+]
+
+
+def _detect_action(question: str) -> Optional[Dict[str, str]]:
+    """Return a CTA action dict if the question matches a known intent, else None."""
+    q = question.lower()
+    for _name, keywords, action in _ACTION_RULES:
+        if any(kw in q for kw in keywords):
+            return action
+    return None
 
 
 class ChatService:
     """
-    RAG-based Chat Service using OpenAI
+    RAG-based Chat Service using OpenAI + ChromaDB.
 
-    This service handles the complete RAG pipeline:
-    - Document loading from TXT files
-    - Text chunking and embedding generation
-    - Vector storage and similarity search
-    - Question answering with context retrieval
+    ChromaDB persists embeddings to disk, so restarts are instant.
+    Supports add/delete/list/reload operations for document management.
 
     Attributes:
         documents_directory (Path): Directory containing TXT documents
-        vector_store (FAISS): Vector database for document embeddings
+        chroma_client: ChromaDB persistent client
+        collection: ChromaDB collection holding embeddings
         embeddings (OpenAIEmbeddings): OpenAI embedding model
         llm (ChatOpenAI): GPT LLM for answer generation
-        retriever: Vector store retriever for similarity search
     """
 
     def __init__(self):
-        """
-        Initialize the RAG chat service.
-
-        This constructor:
-        1. Sets up the TXT documents directory
-        2. Initializes AWS Bedrock components (embeddings + LLM)
-        3. Documents are loaded lazily on first use (not during init)
-        """
-        # Initialize instance variables
         self.documents_directory = self._get_documents_directory()
-        self.vector_store = None
+        self.chroma_client = None
+        self.collection = None
         self.embeddings = None
         self.llm = None
-        self.retriever = None
         self._is_loading = False
         self._load_attempted = False
 
-        # Set up AWS Bedrock components
         self._initialize_components()
+        logger.info("ChatService initialized (ChromaDB collection will be verified on first use)")
 
-        # NOTE: Documents are NOT loaded here to allow fast server startup
-        # They will be loaded lazily on first use via _ensure_initialized()
-        logger.info("ChatService initialized (documents will load on first use)")
+    # =========================================================================
+    # Private helpers
+    # =========================================================================
 
     @staticmethod
     def _get_documents_directory() -> Path:
-        """
-        Get or create the TXT documents directory.
-
-        Creates the directory structure: app/documents/txts/
-        If the directory doesn't exist, it will be created automatically.
-
-        Returns:
-            Path: Path object pointing to the TXT storage directory
-        """
-        # Get the parent directory (app/)
+        """Return (and create if needed) the TXT documents directory."""
         current_dir = Path(__file__).parent.parent
-
-        # Create path to documents/txts/
         docs_dir = current_dir / "documents" / "txts"
-
-        # Create directory if it doesn't exist (parents=True creates parent dirs too)
         docs_dir.mkdir(parents=True, exist_ok=True)
-
         return docs_dir
+
+    @staticmethod
+    def _get_chroma_dir() -> Path:
+        """Return (and create if needed) the ChromaDB persist directory."""
+        chroma_dir = Path(CHROMA_PERSIST_PATH)
+        chroma_dir.mkdir(parents=True, exist_ok=True)
+        return chroma_dir
 
     def _initialize_components(self):
         """
-        Initialize OpenAI components (embeddings model + LLM).
+        Initialize OpenAI components and ChromaDB client.
 
-        This method sets up:
-        1. OpenAI Embeddings - Converts text to vector embeddings
-        2. GPT LLM - Generates natural language answers
-
-        Raises:
-            Exception: If OpenAI initialization fails (e.g., invalid API key)
+        Sets up:
+        1. OpenAI Embeddings — converts text to vectors
+        2. GPT LLM — generates natural language answers
+        3. ChromaDB PersistentClient + collection
         """
         try:
-            # =================================================================
-            # Initialize OpenAI Embeddings Model
-            # =================================================================
-            # This model converts text into numerical vectors (embeddings)
-            # that capture semantic meaning. Similar texts have similar vectors.
             self.embeddings = OpenAIEmbeddings(
-                model=settings.OPENAI_EMBEDDING_MODEL,  # OpenAI embedding model
+                model=settings.OPENAI_EMBEDDING_MODEL,
             )
             logger.info(f"OpenAI embeddings initialized: model={settings.OPENAI_EMBEDDING_MODEL}")
 
-            # =================================================================
-            # Initialize GPT LLM (Large Language Model)
-            # =================================================================
-            # This is the AI model that generates natural language answers
-            # based on the context retrieved from documents
             self.llm = ChatOpenAI(
-                model=settings.OPENAI_MODEL_ID,  # GPT model
-                temperature=0.7,    # Controls randomness (0=deterministic, 1=creative)
-                max_tokens=1000     # Maximum length of generated response
+                model=settings.OPENAI_MODEL_ID,
+                temperature=0.7,
+                max_tokens=1000,
             )
             logger.info(f"ChatOpenAI initialized: model={settings.OPENAI_MODEL_ID}")
 
-        except Exception as e:
-            logger.error(f"Failed to initialize OpenAI components: {e}")
-            raise
-
-    def _load_documents(self):
-        """
-        Load TXT documents and create vector store for similarity search.
-
-        This method implements the core RAG indexing pipeline:
-        1. Find all TXT files in the documents directory
-        2. Load each TXT file
-        3. Split documents into smaller chunks (for better retrieval)
-        4. Generate embeddings for each chunk
-        5. Store embeddings in FAISS vector database
-        6. Create a retriever for similarity search
-
-        If no TXT files are found, the system will still initialize but won't be
-        able to answer questions until documents are added.
-
-        Raises:
-            Exception: If there's an error during document loading or indexing
-        """
-        try:
-            # =================================================================
-            # Step 1: Find TXT Files
-            # =================================================================
-            txt_files = list(self.documents_directory.glob("*.txt"))
-
-            # Check if any TXT files exist
-            if not txt_files:
-                logger.warning(f"No TXT files found in {self.documents_directory}")
-                logger.info(f"Please add TXT files to: {self.documents_directory}")
-                return  # Exit early if no documents to process
-
-            logger.info(f"Loading {len(txt_files)} TXT files from {self.documents_directory}")
-
-            # =================================================================
-            # Step 2: Load TXT Documents
-            # =================================================================
-            documents = []
-
-            # Process each TXT file
-            for txt_file in txt_files:
-                try:
-                    # Read the text file content
-                    loader = TextLoader(str(txt_file), encoding='utf-8')
-                    docs = loader.load()
-
-                    # Add to documents list
-                    documents.extend(docs)
-
-                    logger.info(f"Loaded {txt_file.name}")
-                except Exception as e:
-                    # Log error but continue with other files
-                    logger.error(f"Error loading {txt_file.name}: {e}")
-
-            # Check if any documents were successfully loaded
-            if not documents:
-                logger.error("No documents were successfully loaded")
-                return
-
-            # =================================================================
-            # Step 3: Split Documents into Chunks
-            # =================================================================
-            # Documents are split into smaller chunks for better retrieval.
-            # Why? Because:
-            # 1. Embeddings work better on focused content
-            # 2. We can retrieve only relevant sections (not entire documents)
-            # 3. LLM context windows have size limits
-            text_splitter = RecursiveCharacterTextSplitter(
-                chunk_size=500,       # Each chunk is ~500 characters (smaller for lean docs)
-                chunk_overlap=100,    # 100 char overlap between chunks
-                length_function=len,
+            # ChromaDB persistent client
+            chroma_path = str(self._get_chroma_dir())
+            self.chroma_client = chromadb.PersistentClient(path=chroma_path)
+            self.collection = self.chroma_client.get_or_create_collection(
+                name=CHROMA_COLLECTION_NAME,
+                metadata={"hnsw:space": "cosine"},
             )
-            splits = text_splitter.split_documents(documents)
-            logger.info(f"Split documents into {len(splits)} chunks")
-
-            # =================================================================
-            # Step 4: Create Vector Store (FAISS)
-            # =================================================================
-            # Convert text chunks to vectors and store them
-            # FAISS (Facebook AI Similarity Search) is an efficient vector database
-            self.vector_store = FAISS.from_documents(
-                splits,            # Document chunks to index
-                self.embeddings    # Embedding model to convert text → vectors
+            logger.info(
+                f"ChromaDB collection '{CHROMA_COLLECTION_NAME}' ready at {chroma_path} "
+                f"({self.collection.count()} documents)"
             )
-
-            # =================================================================
-            # Step 5: Create Retriever
-            # =================================================================
-            # A retriever finds the most similar documents to a given query
-            self.retriever = self.vector_store.as_retriever(
-                search_type="similarity",
-                search_kwargs={"k": 3}     # Return top 3 most similar chunks
-            )
-            logger.info("Vector store created successfully")
 
         except Exception as e:
-            logger.error(f"Error loading documents: {e}")
+            logger.error(f"Failed to initialize components: {e}")
             raise
 
     def _ensure_initialized(self):
         """
-        Ensure documents are loaded before processing requests.
+        Lazily seed the ChromaDB collection on first use.
 
-        This method implements lazy initialization - documents are only loaded
-        when first needed, not during app startup. This allows the server to
-        start quickly and respond to health checks immediately.
-
-        If documents haven't been loaded yet, this loads them now.
-        Subsequent calls will skip loading since documents are already in memory.
+        If the collection already contains documents, skip re-embedding.
+        If empty, call reload_documents() to ingest txt files.
         """
-        # If already loaded, do nothing
-        if self.vector_store is not None:
+        if self.collection is None:
+            raise Exception("ChromaDB collection not initialized.")
+
+        # Already has data — no work needed
+        if self.collection.count() > 0:
             return
 
-        # Prevent multiple simultaneous loads
+        # Prevent concurrent seeding
         if self._is_loading:
-            raise Exception("Documents are currently being loaded. Please try again in a moment.")
+            raise Exception("Documents are currently being loaded. Please try again.")
 
-        # If we already tried and failed, don't keep retrying automatically
-        if self._load_attempted and self.vector_store is None:
-            raise Exception("Document loading failed previously. Please use /reload endpoint to retry.")
+        if self._load_attempted and self.collection.count() == 0:
+            raise Exception(
+                "Document loading failed previously. Use /admin/reload to retry."
+            )
 
-        # Load documents now
         try:
             self._is_loading = True
             self._load_attempted = True
-            logger.info("Loading documents on first use...")
-            self._load_documents()
+            logger.info("ChromaDB collection is empty — seeding from txt files...")
+            self.reload_documents()
         finally:
             self._is_loading = False
 
-    def answer_question(self, question: str) -> Dict[str, Any]:
+    @staticmethod
+    def _chunk_text(text: str, chunk_size: int = CHUNK_SIZE, overlap: int = CHUNK_OVERLAP) -> List[str]:
+        """
+        Split text into overlapping chunks.
+
+        Args:
+            text: Full text to split
+            chunk_size: Maximum characters per chunk
+            overlap: Character overlap between consecutive chunks
+
+        Returns:
+            List of text chunks
+        """
+        if not text:
+            return []
+
+        chunks = []
+        start = 0
+        while start < len(text):
+            end = start + chunk_size
+            chunks.append(text[start:end])
+            if end >= len(text):
+                break
+            start = end - overlap  # Slide back by overlap amount
+
+        return chunks
+
+    # =========================================================================
+    # Public methods
+    # =========================================================================
+
+    def answer_question(self, question: str, session_id: Optional[str] = None) -> Dict[str, Any]:
         """
         Answer a question using RAG (Retrieval Augmented Generation).
 
-        This is the main RAG inference pipeline:
-        1. Ensure documents are loaded (lazy initialization)
-        2. Retrieve relevant document chunks based on question
+        Pipeline:
+        1. Ensure ChromaDB collection has documents (lazy init)
+        2. Embed the question and retrieve top-4 similar chunks
         3. Build context from retrieved chunks
-        4. Create a prompt with context + question
-        5. Generate answer using Claude LLM
-        6. Return answer with source citations
+        4. Prompt GPT with context + question
+        5. Detect a smart-CTA action from the question (keyword matching)
+        6. Persist the turn (if session_id given) and return answer + sources + action
 
         Args:
-            question (str): The user's question
+            question: The student's question
+            session_id: Optional client-generated session id, for history persistence
 
         Returns:
-            Dict[str, Any]: Response containing:
-                - answer (str): Generated answer
-                - sources (list): List of source documents with metadata
-                - context_used (str): The context that was provided to the LLM
-
-        Raises:
-            Exception: If there's an error during question answering
+            Dict with keys: answer, sources, context_used, action
         """
         try:
-            # =================================================================
-            # Ensure Documents are Loaded (Lazy Initialization)
-            # =================================================================
             self._ensure_initialized()
 
-            # =================================================================
-            # Check if System is Initialized
-            # =================================================================
-            if not self.retriever:
+            if self.collection.count() == 0:
                 return {
-                    "answer": "The document system is not initialized. Please check that documents are available.",
+                    "answer": (
+                        "The knowledge base is empty. Please contact the admin to load documents, "
+                        "or call 1800-1212-88800 for immediate assistance."
+                    ),
                     "sources": [],
-                    "context_used": ""
+                    "context_used": "",
                 }
 
-            # =================================================================
-            # Step 1: Retrieve Relevant Documents
-            # =================================================================
-            # Use semantic search to find the most relevant document chunks
-            # The retriever converts the question to a vector and finds
-            # the closest vectors in the FAISS index
-            relevant_docs = self.retriever.invoke(question)
+            # Embed the question
+            question_embedding = self.embeddings.embed_documents([question])[0]
 
-            # Check if any relevant documents were found
-            if not relevant_docs:
+            # Query ChromaDB for top-4 relevant chunks
+            results = self.collection.query(
+                query_embeddings=[question_embedding],
+                n_results=min(4, self.collection.count()),
+            )
+
+            if not results or not results.get("documents") or not results["documents"][0]:
                 return {
-                    "answer": "I couldn't find relevant information in the documents to answer your question.",
+                    "answer": (
+                        "I couldn't find relevant information to answer your question. "
+                        "Please call 1800-1212-88800 or email admissions@cumail.in."
+                    ),
                     "sources": [],
-                    "context_used": ""
+                    "context_used": "",
                 }
 
-            # =================================================================
-            # Step 2: Build Context from Retrieved Documents
-            # =================================================================
-            # Combine all retrieved document chunks into a single context string
-            # Each document's content is separated by double newlines
-            context = "\n\n".join([doc.page_content for doc in relevant_docs])
+            # Build context from retrieved chunks
+            docs = results["documents"][0]
+            metadatas = results["metadatas"][0] if results.get("metadatas") else [{}] * len(docs)
+            context = "\n\n".join(docs)
 
-            # =================================================================
-            # Step 3: Create Prompt for LLM
-            # =================================================================
-            # This is the instruction + context + question that we send to the LLM.
-            # The persona here is a student counsellor, not a generic Q&A bot:
-            # 1. Warm, guiding tone - acknowledge the question and suggest a
-            #    helpful next step where natural, instead of just reciting facts
-            # 2. Grounded strictly in the provided context - never invent
-            #    placement guarantees, rankings, or numbers that aren't there
-            # 3. Admits when the context doesn't cover something
-            # 4. Redirects gently if the question is outside what a student
-            #    counsellor at the institute would help with
-            prompt_template = """You are a warm, encouraging student counsellor at Demo Institute of Technology (DIT). 
-            Your job is to help prospective and current students make sense of programs, placements, facilities, and campus life - 
-            not just recite facts, but guide them toward a next step that fits their situation.
+            # CU counsellor prompt
+            prompt = (
+                "You are a friendly, enthusiastic student counsellor at Chandigarh University (CU), "
+                "Mohali, Punjab, who genuinely enjoys helping students. "
+                "Answer using ONLY the context provided below.\n\n"
+                "PERSONALITY & TONE:\n"
+                "- Be warm, encouraging, and approachable—like chatting with a helpful senior, not a call-center agent\n"
+                "- Show genuine enthusiasm when sharing good info (e.g., \"Great question!\", \"You're going to love this!\")\n"
+                "- Use casual, natural language and contractions (e.g., \"you'll\", \"that's\", \"here's\")\n"
+                "- Sprinkle in relevant emojis to add warmth (e.g., 🎓 📚 🏠 💰 ✅) without overdoing it—one or two per response is plenty\n"
+                "- Add a brief friendly sign-off when it fits, like \"Hope that helps! 😊\" or \"Let me know if you'd like more details!\"\n"
+                "- Avoid robotic or formal phrasing—no \"I am here to assist you\" or \"Please be advised\"\n\n"
+                "If the context doesn't cover the question, say something like: \"Hmm, I don't have the specifics on "
+                "that one! 🙏 Give us a call at 1800-1212-88800 or email admissions@cumail.in and the team will "
+                "sort you out.\"\n\n"
+                "Never invent packages, rankings, or figures not in the context. If the question is unrelated to CU, "
+                "gently redirect.\n"
+                "Use the conversation history to understand follow-up questions and maintain context.\n\n"
+                "FORMATTING RULES:\n"
+                "- Use **bold** for important terms, program names, prices, and key info\n"
+                "- For multiple items, use a simple numbered list starting at the left margin:\n"
+                "1. **Item Name** - key details\n"
+                "2. **Item Name** - key details\n"
+                "- Write in short, friendly paragraphs with a blank line between them\n"
+                "- Keep responses concise and scannable\n\n"
+                f"Context:\n{context}\n\n"
+                f"Student's question: {question}\n\n"
+                "Your response:"
+            )
 
-Guidelines:
-- Base your answer only on the context below. If the context doesn't cover something, say you don't have that information rather than guessing.
-- Speak like a supportive counsellor, not a search engine: acknowledge the student's question, explain clearly, and where it's natural, suggest a helpful next step (e.g. "you could also ask about...", "it might help to check...").
-- Keep answers concise and conversational - a few short paragraphs at most, not a wall of text.
-- Never invent placement guarantees, rankings, or figures that aren't in the context.
-- If the question is unrelated to DIT or outside what a student counsellor would help with, gently redirect the student back to what you can help with.
-
-Context:
-{context}
-
-Student's question: {question}
-
-Your response: """
-
-            # =================================================================
-            # Step 4: Generate Answer using Claude LLM
-            # =================================================================
-            # Fill in the template with our context and question
-            prompt = prompt_template.format(context=context, question=question)
-
-            # Send prompt to Claude and get response
             response = self.llm.invoke(prompt)
-
-            # Extract the text content from response
             answer = response.content.strip()
 
-            # =================================================================
-            # Step 5: Extract Source Information
-            # =================================================================
-            # Build a list of sources so users can verify the answer
-            # Each source includes: filename and content preview
+            # Build source list
             sources = []
-            for doc in relevant_docs:
-                source_info = {
-                    "file": doc.metadata.get("source", "Unknown"),       # TXT filename
-                    "content_preview": doc.page_content[:200] + "..."   # First 200 chars
-                }
-                sources.append(source_info)
+            seen = set()
+            for meta in metadatas:
+                title = meta.get("title", meta.get("doc_id", "Unknown"))
+                if title not in seen:
+                    seen.add(title)
+                    sources.append({
+                        "doc_id": meta.get("doc_id", ""),
+                        "title": title,
+                        "category": meta.get("category", ""),
+                    })
 
-            # =================================================================
-            # Return Complete Response
-            # =================================================================
+            action = _detect_action(question)
+
+            if session_id:
+                self._save_turn(session_id, question, answer, sources, action)
+
             return {
                 "answer": answer,
                 "sources": sources,
-                # Include context preview (first 500 chars) for transparency
-                "context_used": context[:500] + "..." if len(context) > 500 else context
+                "context_used": context[:500] + "..." if len(context) > 500 else context,
+                "action": action,
             }
 
         except Exception as e:
             logger.error(f"Error answering question: {e}")
             raise
 
-    def get_system_status(self) -> Dict[str, Any]:
-        """
-        Get the current system status and configuration.
+    @staticmethod
+    def _save_turn(
+        session_id: str,
+        question: str,
+        answer: str,
+        sources: List[Dict[str, Any]],
+        action: Optional[Dict[str, str]],
+    ) -> None:
+        """Persist one Q+A turn for session history. Best-effort — never blocks the response."""
+        db = SessionLocal()
+        try:
+            db.add(ConversationTurn(
+                session_id=session_id,
+                question=question,
+                answer=answer,
+                sources_json=json.dumps(sources),
+                action_json=json.dumps(action) if action else None,
+            ))
+            db.commit()
+        except Exception as e:
+            logger.error(f"Error saving conversation turn: {e}")
+            db.rollback()
+        finally:
+            db.close()
 
-        Useful for debugging and monitoring. Shows:
-        - Where TXT documents are stored
-        - How many TXT files are loaded
-        - Which AI models are being used
-        - Whether the vector store is initialized
+    def get_session_history(self, session_id: str) -> List[Dict[str, Any]]:
+        """
+        Return all persisted turns for a session, oldest first.
 
         Returns:
-            Dict[str, Any]: System status information
+            List of dicts with keys: question, answer, sources, action, timestamp
         """
-        # Get list of all TXT files in the directory
-        txt_files = list(self.documents_directory.glob("*.txt"))
+        db = SessionLocal()
+        try:
+            turns = (
+                db.query(ConversationTurn)
+                .filter(ConversationTurn.session_id == session_id)
+                .order_by(ConversationTurn.created_at.asc())
+                .all()
+            )
+            return [
+                {
+                    "question": t.question,
+                    "answer": t.answer,
+                    "sources": json.loads(t.sources_json) if t.sources_json else [],
+                    "action": json.loads(t.action_json) if t.action_json else None,
+                    # SQLite drops tzinfo on round-trip — created_at is always UTC (see
+                    # ConversationTurn.created_at default), so re-attach it explicitly.
+                    # Without this, the frontend's `new Date()` misreads the naive string
+                    # as local time and displays the wrong hour.
+                    "timestamp": t.created_at.replace(tzinfo=timezone.utc).isoformat(),
+                }
+                for t in turns
+            ]
+        finally:
+            db.close()
 
+    def get_system_status(self) -> Dict[str, Any]:
+        """
+        Return current system status and configuration.
+
+        Returns:
+            Dict with collection_name, num_documents, vector_store_initialized,
+            embeddings_model, llm_model
+        """
+        count = self.collection.count() if self.collection else 0
         return {
-            "documents_directory": str(self.documents_directory),   # Path to TXT storage
-            "num_documents": len(txt_files),                        # Number of TXT files found
-            "document_files": [f.name for f in txt_files],          # List of TXT filenames
-            "vector_store_initialized": self.vector_store is not None,  # Is system ready?
-            "embeddings_model": settings.OPENAI_EMBEDDING_MODEL,    # Embedding model name
-            "llm_model": settings.OPENAI_MODEL_ID                   # LLM model name
+            "collection_name": CHROMA_COLLECTION_NAME,
+            "num_documents": count,
+            "vector_store_initialized": count > 0,
+            "embeddings_model": settings.OPENAI_EMBEDDING_MODEL,
+            "llm_model": settings.OPENAI_MODEL_ID,
         }
 
     def reload_documents(self) -> Dict[str, Any]:
         """
-        Reload all documents and rebuild the vector store.
+        Re-read all .txt files from app/documents/txts/ and upsert into ChromaDB.
 
-        Use this when:
-        - New TXT files have been added to the documents folder
-        - Existing TXT files have been modified or edited
-        - You want to refresh the index with updated content
-        - Previous initialization failed and you want to retry
-
-        This will re-run the entire indexing pipeline:
-        1. Find all TXT files
-        2. Load them
-        3. Split into chunks
-        4. Generate embeddings
-        5. Rebuild FAISS index
+        Uses filename stem as doc_id so repeated calls are idempotent (upsert, not delete+insert).
 
         Returns:
-            Dict[str, Any]: Status message and updated system status
-
-        Raises:
-            Exception: If there's an error during reload
+            Dict with message, files_processed, chunks_upserted
         """
         try:
-            # Reset flags to allow reload even if previous load failed
-            self._is_loading = False
-            self._load_attempted = False
+            txt_files = list(self.documents_directory.glob("*.txt"))
 
-            # Re-run the document loading pipeline
-            self._load_documents()
+            if not txt_files:
+                logger.warning(f"No TXT files found in {self.documents_directory}")
+                return {
+                    "message": "No TXT files found",
+                    "files_processed": 0,
+                    "chunks_upserted": 0,
+                }
 
-            # Return success message with updated system status
+            total_chunks = 0
+
+            for txt_file in txt_files:
+                try:
+                    doc_id = txt_file.stem  # e.g. "placements" for placements.txt
+                    content = txt_file.read_text(encoding="utf-8")
+                    title = txt_file.stem.replace("_", " ").title()
+                    category = txt_file.stem  # use stem as default category
+
+                    chunks = self._chunk_text(content)
+
+                    if not chunks:
+                        logger.warning(f"No chunks produced for {txt_file.name}")
+                        continue
+
+                    ids = [f"{doc_id}_chunk_{i}" for i in range(len(chunks))]
+                    chunk_embeddings = self.embeddings.embed_documents(chunks)
+                    metadatas = [
+                        {
+                            "doc_id": doc_id,
+                            "title": title,
+                            "category": category,
+                            "chunk_index": i,
+                        }
+                        for i in range(len(chunks))
+                    ]
+
+                    self.collection.upsert(
+                        ids=ids,
+                        documents=chunks,
+                        metadatas=metadatas,
+                        embeddings=chunk_embeddings,
+                    )
+
+                    total_chunks += len(chunks)
+                    logger.info(f"Upserted {len(chunks)} chunks for {txt_file.name}")
+
+                except Exception as e:
+                    logger.error(f"Error processing {txt_file.name}: {e}")
+
+            logger.info(f"reload_documents: {len(txt_files)} files, {total_chunks} chunks upserted")
             return {
                 "message": "Documents reloaded successfully",
-                **self.get_system_status()  # Include current status
+                "files_processed": len(txt_files),
+                "chunks_upserted": total_chunks,
             }
+
         except Exception as e:
             logger.error(f"Error reloading documents: {e}")
             raise
 
+    def add_document(self, title: str, content: str, category: str) -> Dict[str, Any]:
+        """
+        Add a new document to ChromaDB.
+
+        Chunks the content into 500-char chunks with 100-char overlap, embeds each,
+        and stores them with metadata {title, category, chunk_index}.
+
+        Args:
+            title: Human-readable document title
+            content: Full text content of the document
+            category: Category string (e.g. "placements", "admissions")
+
+        Returns:
+            Dict with success, doc_id, chunks_added
+        """
+        try:
+            # Generate a stable, URL-safe doc_id from title + timestamp suffix
+            timestamp_suffix = str(int(time.time()))[-6:]  # last 6 digits of unix time
+            doc_id = f"{_slug(title)}_{timestamp_suffix}"
+
+            chunks = self._chunk_text(content)
+
+            if not chunks:
+                return {"success": False, "doc_id": doc_id, "chunks_added": 0}
+
+            ids = [f"{doc_id}_chunk_{i}" for i in range(len(chunks))]
+            chunk_embeddings = self.embeddings.embed_documents(chunks)
+            metadatas = [
+                {
+                    "doc_id": doc_id,
+                    "title": title,
+                    "category": category,
+                    "chunk_index": i,
+                }
+                for i in range(len(chunks))
+            ]
+
+            self.collection.add(
+                ids=ids,
+                documents=chunks,
+                metadatas=metadatas,
+                embeddings=chunk_embeddings,
+            )
+
+            logger.info(f"add_document: doc_id={doc_id}, chunks_added={len(chunks)}")
+            return {"success": True, "doc_id": doc_id, "chunks_added": len(chunks)}
+
+        except Exception as e:
+            logger.error(f"Error adding document '{title}': {e}")
+            raise
+
+    def delete_document(self, doc_id: str) -> Dict[str, Any]:
+        """
+        Delete all chunks associated with a given doc_id.
+
+        Args:
+            doc_id: The document identifier (all chunks with this doc_id are removed)
+
+        Returns:
+            Dict with success, deleted_count
+        """
+        try:
+            # Fetch IDs of all chunks belonging to this doc_id
+            results = self.collection.get(where={"doc_id": doc_id})
+            chunk_ids = results.get("ids", [])
+
+            if not chunk_ids:
+                logger.info(f"delete_document: no chunks found for doc_id={doc_id}")
+                return {"success": False, "deleted_count": 0}
+
+            self.collection.delete(ids=chunk_ids)
+            logger.info(f"delete_document: doc_id={doc_id}, deleted_count={len(chunk_ids)}")
+            return {"success": True, "deleted_count": len(chunk_ids)}
+
+        except Exception as e:
+            logger.error(f"Error deleting document '{doc_id}': {e}")
+            raise
+
+    def list_documents(self) -> List[Dict[str, Any]]:
+        """
+        Return unique documents in the ChromaDB collection.
+
+        Deduplicates by doc_id and counts chunks per document.
+
+        Returns:
+            List of dicts with doc_id, title, category, chunk_count
+        """
+        try:
+            results = self.collection.get()
+            metadatas = results.get("metadatas", [])
+
+            # Aggregate by doc_id
+            doc_map: Dict[str, Dict[str, Any]] = {}
+            for meta in metadatas:
+                if not meta:
+                    continue
+                doc_id = meta.get("doc_id", "unknown")
+                if doc_id not in doc_map:
+                    doc_map[doc_id] = {
+                        "doc_id": doc_id,
+                        "title": meta.get("title", doc_id),
+                        "category": meta.get("category", ""),
+                        "chunk_count": 0,
+                    }
+                doc_map[doc_id]["chunk_count"] += 1
+
+            return list(doc_map.values())
+
+        except Exception as e:
+            logger.error(f"Error listing documents: {e}")
+            raise
+
 
 # =============================================================================
-# Create Singleton Instance
+# Singleton instance
 # =============================================================================
-# Create a single instance of ChatService that will be used throughout the app
-# This ensures:
-# 1. Documents are loaded only once when the app starts
-# 2. Vector store is shared across all API requests
-# 3. No need to reinitialize on every request (much faster!)
 chat_service = ChatService()

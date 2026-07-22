@@ -1,6 +1,6 @@
 # Campus Assistant Branding
 
-This chatbot is a generic, reusable demo built for **Demo Institute of Technology (DIT)**
+This chatbot is a generic, reusable demo built for **Chandigarh University (DIT)**
 — a fictional college used for teaching purposes. Swap the content in
 `backend/app/documents/txts/` and the text below to point it at any institution.
 
@@ -54,7 +54,7 @@ gracefully to system fonts if it fails to load.
 - **Subtitle:** "Ask me about DIT"
 
 ### Welcome Message
-"Welcome to Demo Institute of Technology! 🎓 I can help answer questions about
+"Welcome to Chandigarh University! 🎓 I can help answer questions about
 our programs, placements, facilities, and campus life. What would you like to know?"
 
 ### Input Placeholder

@@ -67,6 +67,10 @@ async def lifespan(app: FastAPI):
     # Note: chat_service initializes automatically when imported
     # It loads PDFs and creates vector store during import
 
+    # Create the SQLite conversation-history tables if they don't exist yet
+    from app.core.db import init_db
+    init_db()
+
     # Yield control back to FastAPI to run the application
     yield
 

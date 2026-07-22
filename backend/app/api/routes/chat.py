@@ -10,6 +10,7 @@ Endpoints:
 """
 import logging
 import time
+from typing import Optional
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, field_validator
 from app.services.chat_service import chat_service
@@ -36,6 +37,7 @@ class ChatRequest(BaseModel):
         }
     """
     question: str
+    session_id: Optional[str] = None
 
     @field_validator('question')
     @classmethod
@@ -156,7 +158,7 @@ async def ask(body: ChatRequest):
         # 1. Retrieve relevant document chunks
         # 2. Generate answer using Claude LLM
         # 3. Return answer with source citations
-        result = chat_service.answer_question(question=body.question)
+        result = chat_service.answer_question(question=body.question, session_id=body.session_id)
 
         # Calculate total execution time in milliseconds
         execution_time_ms = (time.time() - start_time) * 1000
@@ -169,6 +171,7 @@ async def ask(body: ChatRequest):
             "answer": result["answer"],                    # AI-generated answer
             "sources": result.get("sources", []),          # Source documents with citations
             "context_used": result.get("context_used", ""),  # Context provided to LLM
+            "action": result.get("action"),                 # Optional smart-CTA button
             "metadata": {
                 "original_question": body.question,        # Echo back the question
                 "execution_time_ms": round(execution_time_ms, 2),  # Performance metric
@@ -202,6 +205,32 @@ async def ask(body: ChatRequest):
                 "error": str(e)  # Include error details for debugging
             }
         }
+
+
+@router.get("/history", status_code=status.HTTP_200_OK)
+async def get_history(session_id: str):
+    """
+    Return persisted conversation turns for a session, oldest first.
+
+    Used to restore chat history after a page reload — the frontend keeps a
+    session_id in localStorage and calls this once when the chat window opens.
+
+    **Success Response (200 OK):**
+    ```json
+    {
+        "success": true,
+        "messages": [
+            {"question": "...", "answer": "...", "sources": [...], "action": null, "timestamp": "..."}
+        ]
+    }
+    ```
+    """
+    try:
+        messages = chat_service.get_session_history(session_id=session_id)
+        return {"success": True, "messages": messages}
+    except Exception as e:
+        logger.error(f"Error fetching session history: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/status", status_code=status.HTTP_200_OK)

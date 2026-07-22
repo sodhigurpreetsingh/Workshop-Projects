@@ -14,7 +14,7 @@ Current route modules:
 - resume: AI resume analysis endpoints (/resume/analyze)
 """
 from fastapi import APIRouter
-from app.api.routes import chat, resume, quiz
+from app.api.routes import chat, resume, quiz, admin
 
 # =============================================================================
 # Create Main API Router
@@ -48,6 +48,16 @@ api_router.include_router(resume.router)
 # - GET  /quiz/health   - Health check
 # Mounted at: /api/v1/quiz/*
 api_router.include_router(quiz.router)
+
+# Admin Routes - Protected knowledge base management
+# Includes:
+# - POST   /admin/add       - Add a document
+# - DELETE /admin/delete    - Delete a document
+# - GET    /admin/documents - List documents
+# - POST   /admin/reload    - Reload from txt files
+# - GET    /admin/status    - System status
+# Mounted at: /api/v1/admin/* (when API prefix is /api/v1)
+api_router.include_router(admin.router)
 
 # =============================================================================
 # Health Check Endpoint

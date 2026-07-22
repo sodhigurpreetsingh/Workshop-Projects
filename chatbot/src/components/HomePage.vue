@@ -4,7 +4,7 @@
     <!-- ======================= Utility Bar ======================= -->
     <div class="utility-bar">
       <div class="utility-inner">
-        <span class="utility-left">Admissions Open 2025–26 &nbsp;|&nbsp; Call us: +91-98765-00000</span>
+        <span class="utility-left">Admissions Open 2025–26 &nbsp;|&nbsp; Toll Free: 1800-1212-88800</span>
         <div class="utility-right">
           <a href="#">Alumni</a>
           <a href="#">Careers</a>
@@ -20,21 +20,21 @@
         <div class="brand">
           <div class="brand-mark">
             <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect width="40" height="40" rx="8" fill="#003580"/>
+              <rect width="40" height="40" rx="8" fill="#8B0000"/>
               <path d="M20 7L7 14l13 6.5 10-5.1V23h2.5V14L20 7z" fill="white"/>
               <path d="M10 17v6c0 2 4 4 10 4s10-2 10-4v-6l-10 5-10-5z" fill="white" opacity="0.6"/>
             </svg>
           </div>
           <div class="brand-text">
-            <div class="brand-name">Demo Institute of Technology</div>
-            <div class="brand-tag">DIT &nbsp;·&nbsp; Est. 2004 &nbsp;·&nbsp; AICTE Approved</div>
+            <div class="brand-name">Chandigarh University</div>
+            <div class="brand-tag">CU &nbsp;·&nbsp; Mohali, Punjab &nbsp;·&nbsp; NAAC A+</div>
           </div>
         </div>
         <nav class="nav-links">
           <a href="#programs">Programs</a>
-          <a href="#strengths">About</a>
           <a href="#placements">Placements</a>
           <a href="#campus">Campus</a>
+          <a href="#scholarships">Scholarships</a>
           <a href="#contact">Contact</a>
         </nav>
         <a href="#contact" class="btn-apply">Apply Now &rarr;</a>
@@ -45,10 +45,10 @@
     <section class="hero">
       <div class="hero-overlay"></div>
       <div class="hero-inner">
-        <span class="hero-eyebrow">Ranked Among Top Engineering Institutes in North India</span>
-        <h1>Shape Your Future at<br /><span class="hero-highlight">Demo Institute of Technology</span></h1>
+        <span class="hero-eyebrow">Ranked #526 Globally | NAAC A+ | Top Private University in Punjab</span>
+        <h1>Shape Your Future at<br /><span class="hero-highlight">Chandigarh University</span></h1>
         <p class="hero-lead">
-          Empowering students with industry-ready skills through B.Tech, MBA, BBA, B.Com and B.Pharma programs — backed by modern labs, 200+ recruiters, and faculty who invest in your growth.
+          One of India's fastest-growing universities — offering 200+ programs across engineering, management, pharmacy, architecture, computing and more. Students from 68 countries. World-class research. Life-changing placements.
         </p>
         <div class="hero-actions">
           <a href="#programs" class="btn-primary-hero">Explore Programs</a>
@@ -56,23 +56,23 @@
         </div>
         <div class="hero-stats">
           <div class="stat-item">
-            <strong>20+</strong>
-            <span>Years of Excellence</span>
+            <strong>10,000+</strong>
+            <span>Placements<br/>Batch 2024–25</span>
           </div>
           <div class="stat-divider"></div>
           <div class="stat-item">
-            <strong>200+</strong>
-            <span>Recruiting Companies</span>
+            <strong>1,300+</strong>
+            <span>Recruiting<br/>Companies</span>
           </div>
           <div class="stat-divider"></div>
           <div class="stat-item">
-            <strong>15,000+</strong>
-            <span>Alumni Worldwide</span>
+            <strong>&#8377;1.7 Cr</strong>
+            <span>Highest<br/>Package</span>
           </div>
           <div class="stat-divider"></div>
           <div class="stat-item">
-            <strong>7.0+</strong>
-            <span>CGPA for Placements</span>
+            <strong>68</strong>
+            <span>Countries<br/>Represented</span>
           </div>
         </div>
       </div>
@@ -82,20 +82,20 @@
     <div class="rankings-strip">
       <div class="rankings-inner">
         <div class="ranking-badge">
-          <strong>#1</strong>
-          <span>Engineering Institute<br />in the Region</span>
+          <strong>#526</strong>
+          <span>QS World Rankings<br />2027 — Top 2% Globally</span>
+        </div>
+        <div class="ranking-badge">
+          <strong>19th</strong>
+          <span>NIRF 2025<br />Overall Ranking</span>
         </div>
         <div class="ranking-badge">
           <strong>A+</strong>
-          <span>NAAC Accreditation<br />Grade</span>
+          <span>NAAC<br />Accreditation</span>
         </div>
         <div class="ranking-badge">
-          <strong>NBA</strong>
-          <span>Accredited<br />Programs</span>
-        </div>
-        <div class="ranking-badge">
-          <strong>ISO</strong>
-          <span>9001:2015<br />Certified</span>
+          <strong>5,900+</strong>
+          <span>Patents<br />Filed</span>
         </div>
       </div>
     </div>
@@ -106,51 +106,96 @@
         <div class="section-header">
           <span class="eyebrow">Our Programs</span>
           <h2>Choose the Right Program for Your Career</h2>
-          <p class="section-subtitle">Industry-aligned curriculum designed with inputs from leading companies and academic experts.</p>
+          <p class="section-subtitle">Industry-aligned curriculum across engineering, management, computing, pharmacy, architecture and business — designed with inputs from 530+ university partnerships.</p>
         </div>
         <div class="programs-grid">
           <div class="program-card featured">
-            <div class="program-card-top blue">
+            <div class="program-card-top maroon">
               <div class="program-icon">💻</div>
               <span class="program-badge">Most Popular</span>
             </div>
             <div class="program-card-body">
-              <h3>B.Tech</h3>
-              <p>Computer Science &amp; Engineering, Information Technology, Civil, Mechanical, Electronics &amp; Communication</p>
+              <h3>B.Tech / B.E. Engineering</h3>
+              <p>20+ specializations including CSE, AI &amp; ML, Data Science, Cybersecurity, Mechanical, Civil, Electronics &amp; Communication.</p>
               <ul class="program-features">
                 <li>4-Year Degree Program</li>
                 <li>Industry Internships</li>
-                <li>Placement Assistance</li>
+                <li>Top Placement Record</li>
               </ul>
               <a href="#contact" class="card-cta">Learn More &rarr;</a>
             </div>
           </div>
           <div class="program-card">
-            <div class="program-card-top orange">
+            <div class="program-card-top gold-bg">
               <div class="program-icon">📊</div>
             </div>
             <div class="program-card-body">
-              <h3>MBA &amp; BBA</h3>
-              <p>Management programs built around case studies, live projects, internships and corporate mentors.</p>
+              <h3>MBA</h3>
+              <p>2-year program with 10+ specializations including AI &amp; Data Science, Finance, Marketing and International Business.</p>
               <ul class="program-features">
-                <li>2-Year MBA / 3-Year BBA</li>
+                <li>2-Year MBA Program</li>
                 <li>Corporate Mentorship</li>
-                <li>Industry Case Studies</li>
+                <li>Live Industry Projects</li>
               </ul>
               <a href="#contact" class="card-cta">Learn More &rarr;</a>
             </div>
           </div>
           <div class="program-card">
             <div class="program-card-top teal">
+              <div class="program-icon">🖥️</div>
+            </div>
+            <div class="program-card-body">
+              <h3>BCA / MCA</h3>
+              <p>3-year BCA and 2-year MCA programs in Computing, Data Science and Cloud Technology tracks.</p>
+              <ul class="program-features">
+                <li>BCA 3 Years / MCA 2 Years</li>
+                <li>Hands-on Coding Labs</li>
+                <li>Placement Support</li>
+              </ul>
+              <a href="#contact" class="card-cta">Learn More &rarr;</a>
+            </div>
+          </div>
+          <div class="program-card">
+            <div class="program-card-top maroon">
               <div class="program-icon">💊</div>
             </div>
             <div class="program-card-body">
-              <h3>B.Pharma &amp; B.Com</h3>
-              <p>Pharmacy and commerce programs with lab-based learning, industry exposure and career guidance.</p>
+              <h3>B.Pharm / M.Pharm</h3>
+              <p>NAAC-accredited pharmacy programs with state-of-the-art labs, research exposure and industry connections.</p>
               <ul class="program-features">
-                <li>Hands-on Lab Training</li>
-                <li>Industry Partnerships</li>
-                <li>Career Counselling</li>
+                <li>Lab-based Learning</li>
+                <li>Research Opportunities</li>
+                <li>Pharma Industry Tie-ups</li>
+              </ul>
+              <a href="#contact" class="card-cta">Learn More &rarr;</a>
+            </div>
+          </div>
+          <div class="program-card">
+            <div class="program-card-top gold-bg">
+              <div class="program-icon">🏛️</div>
+            </div>
+            <div class="program-card-body">
+              <h3>B.Arch</h3>
+              <p>5-year architecture and design program with studio practice, international workshops, and design competitions.</p>
+              <ul class="program-features">
+                <li>5-Year Professional Degree</li>
+                <li>Design Studio Culture</li>
+                <li>International Exposure</li>
+              </ul>
+              <a href="#contact" class="card-cta">Learn More &rarr;</a>
+            </div>
+          </div>
+          <div class="program-card">
+            <div class="program-card-top teal">
+              <div class="program-icon">📈</div>
+            </div>
+            <div class="program-card-body">
+              <h3>BBA</h3>
+              <p>3-year Business Management program with case studies, live projects, startup incubation and corporate mentors.</p>
+              <ul class="program-features">
+                <li>3-Year BBA Program</li>
+                <li>Startup Incubation Cell</li>
+                <li>Industry Case Studies</li>
               </ul>
               <a href="#contact" class="card-cta">Learn More &rarr;</a>
             </div>
@@ -159,54 +204,54 @@
       </div>
     </section>
 
-    <!-- ======================= Why DIT ======================= -->
+    <!-- ======================= Why CU ======================= -->
     <section id="strengths" class="section section-gray">
       <div class="section-inner">
         <div class="section-header">
-          <span class="eyebrow">Why Choose DIT</span>
+          <span class="eyebrow">Why Choose CU</span>
           <h2>An Education Built Around Your Success</h2>
         </div>
         <div class="strengths-grid">
           <div class="strength-item">
-            <div class="strength-icon blue-bg">🔬</div>
+            <div class="strength-icon maroon-bg">🔬</div>
             <div>
               <h4>Research &amp; Innovation</h4>
-              <p>State-of-the-art labs, funded research projects and innovation centres across departments.</p>
+              <p>5,900+ patents filed. Ranked #1 in India for patents. Research centres across AI, biotech, materials science and robotics.</p>
             </div>
           </div>
           <div class="strength-item">
-            <div class="strength-icon orange-bg">🤝</div>
+            <div class="strength-icon gold-icon-bg">🤝</div>
             <div>
               <h4>Industry Connect</h4>
-              <p>Regular placement drives, internship programmes and real-world projects with 200+ companies.</p>
+              <p>1,300+ recruiting companies visit campus. Regular placement drives, internship programs and real-world projects.</p>
             </div>
           </div>
           <div class="strength-item">
-            <div class="strength-icon blue-bg">🏫</div>
+            <div class="strength-icon maroon-bg">🌐</div>
             <div>
-              <h4>World-Class Campus</h4>
-              <p>Digital library, sports complex, Wi-Fi campus, modern hostels and 24×7 medical facilities.</p>
+              <h4>Global Reach</h4>
+              <p>530+ university partnerships worldwide. Students from 68 countries and all 28 states of India on a single campus.</p>
             </div>
           </div>
           <div class="strength-item">
-            <div class="strength-icon orange-bg">🌍</div>
+            <div class="strength-icon gold-icon-bg">🏆</div>
             <div>
-              <h4>Global Exposure</h4>
-              <p>International exchange programs, foreign university collaborations and study-abroad opportunities.</p>
+              <h4>Top Rankings</h4>
+              <p>QS World #526, NIRF 19th Overall, NAAC A+ — consistently ranked among India's best private universities.</p>
             </div>
           </div>
           <div class="strength-item">
-            <div class="strength-icon blue-bg">👨‍🏫</div>
+            <div class="strength-icon maroon-bg">👨‍🏫</div>
             <div>
               <h4>Expert Faculty</h4>
-              <p>Professors with PhDs from IITs and international universities, bringing deep domain expertise.</p>
+              <p>Professors with PhDs from IITs, IIMs, NITs and international universities bringing cutting-edge domain expertise.</p>
             </div>
           </div>
           <div class="strength-item">
-            <div class="strength-icon orange-bg">🏆</div>
+            <div class="strength-icon gold-icon-bg">🎓</div>
             <div>
-              <h4>Student Achievements</h4>
-              <p>Award-winning student teams in hackathons, sports, cultural and entrepreneurship competitions.</p>
+              <h4>Scholarships</h4>
+              <p>Merit-based and need-based scholarships, state government scholarships, and fee waivers for deserving students.</p>
             </div>
           </div>
         </div>
@@ -219,52 +264,52 @@
         <div class="section-header">
           <span class="eyebrow">Placements</span>
           <h2>Careers That Start Here</h2>
-          <p class="section-subtitle">Our dedicated placement cell prepares you from day one — mock interviews, soft skills, resume building, and direct access to top recruiters.</p>
+          <p class="section-subtitle">10,000+ students placed in batch 2024–25. Our dedicated placement cell prepares you from day one with mock interviews, aptitude training, and direct access to top global recruiters.</p>
         </div>
         <div class="placements-layout">
           <div class="placements-left">
             <div class="placement-stat-card">
-              <strong>4–8 LPA</strong>
-              <span>Average Package Range</span>
+              <strong>10,000+</strong>
+              <span>Placements — Batch 2024–25</span>
             </div>
             <div class="placement-stat-card accent">
-              <strong>200+</strong>
-              <span>Companies Visit Campus</span>
+              <strong>&#8377;1.7 Cr</strong>
+              <span>Highest Package Offered</span>
             </div>
             <div class="placement-stat-card">
-              <strong>85%</strong>
-              <span>Eligible Students Placed</span>
+              <strong>1,300+</strong>
+              <span>Recruiting Companies</span>
             </div>
           </div>
           <div class="placements-right">
-            <h3>Our Placement Process</h3>
+            <h3>Placement Highlights 2024–25</h3>
             <div class="placement-steps">
               <div class="step">
                 <div class="step-num">01</div>
                 <div>
-                  <h5>Pre-Placement Training</h5>
-                  <p>Aptitude, coding, communication and personality development workshops.</p>
+                  <h5>Jaspreet Singh — Atlassian</h5>
+                  <p>Rs 59.9 LPA offer from Atlassian — one of the highest packages from CU.</p>
                 </div>
               </div>
               <div class="step">
                 <div class="step-num">02</div>
                 <div>
-                  <h5>Mock Interviews &amp; Resume</h5>
-                  <p>Industry panel mock interviews and one-on-one resume building sessions.</p>
+                  <h5>Vandana Chauhan — Palo Alto Networks</h5>
+                  <p>Rs 54.75 LPA cybersecurity role at Palo Alto Networks, a global leader in network security.</p>
                 </div>
               </div>
               <div class="step">
                 <div class="step-num">03</div>
                 <div>
-                  <h5>Campus Recruitment Drives</h5>
-                  <p>IT, core engineering and management companies visit campus for hiring.</p>
+                  <h5>Dinesh Potla — IBM (CSE Program)</h5>
+                  <p>Rs 52.11 LPA through IBM's Cognitive Systems Engineer program.</p>
                 </div>
               </div>
               <div class="step">
                 <div class="step-num">04</div>
                 <div>
-                  <h5>Offer &amp; Onboarding</h5>
-                  <p>Placement cell supports you through offer letters and joining formalities.</p>
+                  <h5>Top Recruiters on Campus</h5>
+                  <p>Google, Microsoft, Amazon, IBM, Deloitte, TCS, Infosys, Wipro, and 1,300+ more companies.</p>
                 </div>
               </div>
             </div>
@@ -278,28 +323,84 @@
       <div class="section-inner">
         <div class="section-header">
           <span class="eyebrow">Campus Life</span>
-          <h2>A Campus Designed for Growth</h2>
+          <h2>A World Within a Campus</h2>
+          <p class="section-subtitle">Students from 68 countries and all 28 states of India live, learn and grow together on the CU campus in Mohali, Punjab.</p>
         </div>
         <div class="campus-grid">
           <div class="campus-card">
-            <div class="campus-icon">📚</div>
-            <h4>Digital Library</h4>
-            <p>50,000+ volumes, e-journals, and 24×7 reading rooms.</p>
+            <div class="campus-icon">🎭</div>
+            <h4>200+ Clubs &amp; Societies</h4>
+            <p>Cultural, technical, sports and entrepreneurship clubs nurturing talent beyond the classroom.</p>
           </div>
           <div class="campus-card">
-            <div class="campus-icon">⚽</div>
-            <h4>Sports Complex</h4>
-            <p>Cricket ground, football field, indoor courts and a fully equipped gym.</p>
+            <div class="campus-icon">🎵</div>
+            <h4>CU-RHYTHMS Festival</h4>
+            <p>International Folklore Festival celebrating culture from 68 countries — one of India's largest student festivals.</p>
+          </div>
+          <div class="campus-card">
+            <div class="campus-icon">📻</div>
+            <h4>Radio Punjab 90.0 FM</h4>
+            <p>Student-run on-campus FM radio station — one of the few universities in India with a live radio station.</p>
           </div>
           <div class="campus-card">
             <div class="campus-icon">🏠</div>
-            <h4>Hostels</h4>
-            <p>Separate boys &amp; girls hostels with Wi-Fi, mess, and security.</p>
+            <h4>World-Class Hostels</h4>
+            <p>Fully-equipped separate hostels for boys and girls with Wi-Fi, mess, security and sports facilities.</p>
           </div>
-          <div class="campus-card">
-            <div class="campus-icon">🍽️</div>
-            <h4>Cafeteria</h4>
-            <p>Multi-cuisine food court serving 2,000+ students daily.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================= Scholarships ======================= -->
+    <section id="scholarships" class="section">
+      <div class="section-inner">
+        <div class="section-header">
+          <span class="eyebrow">Scholarships</span>
+          <h2>Making Education Accessible</h2>
+          <p class="section-subtitle">CU offers a wide range of scholarships to ensure talented students are never held back by financial constraints.</p>
+        </div>
+        <div class="strengths-grid">
+          <div class="strength-item">
+            <div class="strength-icon maroon-bg">🥇</div>
+            <div>
+              <h4>Merit Scholarship</h4>
+              <p>Up to 100% tuition waiver for students with exceptional academic records in Class 12 or entrance exams.</p>
+            </div>
+          </div>
+          <div class="strength-item">
+            <div class="strength-icon gold-icon-bg">🏅</div>
+            <div>
+              <h4>Sports Scholarship</h4>
+              <p>Fee waivers for national and state-level sports achievers. CU has over 50 national-level sports champions.</p>
+            </div>
+          </div>
+          <div class="strength-item">
+            <div class="strength-icon maroon-bg">💡</div>
+            <div>
+              <h4>Need-Based Financial Aid</h4>
+              <p>Special financial assistance for students from economically weaker sections with strong academic potential.</p>
+            </div>
+          </div>
+          <div class="strength-item">
+            <div class="strength-icon gold-icon-bg">🌍</div>
+            <div>
+              <h4>International Student Support</h4>
+              <p>Dedicated scholarships and cultural support programs for students from all 68 countries represented at CU.</p>
+            </div>
+          </div>
+          <div class="strength-item">
+            <div class="strength-icon maroon-bg">🏛️</div>
+            <div>
+              <h4>State Government Schemes</h4>
+              <p>Facilitation for Punjab, Haryana and central government scholarship schemes including SC/ST/OBC benefits.</p>
+            </div>
+          </div>
+          <div class="strength-item">
+            <div class="strength-icon gold-icon-bg">🔬</div>
+            <div>
+              <h4>Research Fellowship</h4>
+              <p>Ph.D. and research fellowships for outstanding students pursuing advanced studies and innovation projects.</p>
+            </div>
           </div>
         </div>
       </div>
@@ -309,10 +410,21 @@
     <section class="cta-banner">
       <div class="cta-banner-inner">
         <div class="cta-text">
-          <h2>Have Questions About DIT?</h2>
-          <p>Click the chat bubble in the bottom-right corner — our Campus Assistant can answer anything about programs, placements, fees, and facilities.</p>
+          <h2>Have Questions About Chandigarh University?</h2>
+          <p>Click the chat bubble in the bottom-right corner — our CU Campus Assistant can answer anything about programs, placements, fees, scholarships, hostel and campus life.</p>
         </div>
         <a href="#contact" class="btn-cta-white">Talk to Admissions &rarr;</a>
+      </div>
+      <div class="cta-suggestions">
+        <span class="cta-suggestions-label">Try asking:</span>
+        <button
+          v-for="q in sampleQuestions"
+          :key="q"
+          class="suggestion-chip"
+          @click="askChatbot(q)"
+        >
+          {{ q }}
+        </button>
       </div>
     </section>
 
@@ -324,30 +436,30 @@
             <div class="footer-brand">
               <div class="footer-brand-mark">
                 <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <rect width="40" height="40" rx="8" fill="#003580"/>
+                  <rect width="40" height="40" rx="8" fill="#8B0000"/>
                   <path d="M20 7L7 14l13 6.5 10-5.1V23h2.5V14L20 7z" fill="white"/>
                   <path d="M10 17v6c0 2 4 4 10 4s10-2 10-4v-6l-10 5-10-5z" fill="white" opacity="0.6"/>
                 </svg>
               </div>
-              <span>Demo Institute of Technology</span>
+              <span>Chandigarh University</span>
             </div>
-            <p class="footer-desc">AICTE approved engineering and management institute committed to quality education and industry-ready graduates.</p>
+            <p class="footer-desc">NAAC A+ accredited private university in Mohali, Punjab — ranked #526 globally (QS 2027) and 19th in India (NIRF 2025). 200+ programs, 10,000+ placements, 68 countries.</p>
             <div class="footer-socials">
               <a href="#" aria-label="Facebook">f</a>
               <a href="#" aria-label="Twitter">X</a>
               <a href="#" aria-label="LinkedIn">in</a>
-              <a href="#" aria-label="YouTube">▶</a>
+              <a href="#" aria-label="YouTube">&#9654;</a>
             </div>
           </div>
           <div class="footer-col">
             <h5>Programs</h5>
             <ul>
-              <li><a href="#">B.Tech (CSE)</a></li>
-              <li><a href="#">B.Tech (IT)</a></li>
-              <li><a href="#">B.Tech (Civil)</a></li>
+              <li><a href="#">B.Tech / B.E. Engineering</a></li>
               <li><a href="#">MBA</a></li>
-              <li><a href="#">BBA &amp; B.Com</a></li>
-              <li><a href="#">B.Pharma</a></li>
+              <li><a href="#">BCA / MCA</a></li>
+              <li><a href="#">B.Pharm / M.Pharm</a></li>
+              <li><a href="#">B.Arch</a></li>
+              <li><a href="#">BBA</a></li>
             </ul>
           </div>
           <div class="footer-col">
@@ -356,7 +468,7 @@
               <li><a href="#">Admissions</a></li>
               <li><a href="#">Placements</a></li>
               <li><a href="#">Research</a></li>
-              <li><a href="#">Faculty</a></li>
+              <li><a href="#">Scholarships</a></li>
               <li><a href="#">Alumni</a></li>
               <li><a href="#">NIRF Rankings</a></li>
             </ul>
@@ -364,18 +476,18 @@
           <div class="footer-col">
             <h5>Contact Us</h5>
             <ul class="footer-contact">
-              <li>📍 Demo City, State – 140 000</li>
-              <li>📞 +91-98765-00000</li>
-              <li>✉️ admissions@dit.example</li>
-              <li>🌐 www.dit.example</li>
+              <li>&#128205; NH-05, Chandigarh-Ludhiana Highway, Mohali, Punjab - 140413</li>
+              <li>&#128222; 1800-1212-88800 (Toll Free)</li>
+              <li>&#9993;&#65039; admissions@cumail.in</li>
+              <li>&#127760; www.cuchd.in</li>
             </ul>
           </div>
         </div>
       </div>
       <div class="footer-bottom">
         <div class="footer-bottom-inner">
-          <span>© 2025 Demo Institute of Technology. All rights reserved.</span>
-          <span class="footer-note">This is a fictional demo college page for an AI workshop — not a real institution.</span>
+          <span>&#169; 2025 Chandigarh University, Mohali. All rights reserved.</span>
+          <span class="footer-note">Ranked #526 QS World 2027 | NAAC A+ | NIRF 19th Overall 2025</span>
         </div>
       </div>
     </footer>
@@ -386,20 +498,42 @@
 <script>
 export default {
   name: 'HomePage',
+  data() {
+    return {
+      sampleQuestions: [
+        'What is CUCET?',
+        'What is the highest placement package?',
+        'What are the hostel fees?',
+        'What scholarships are available?',
+      ],
+    };
+  },
+  methods: {
+    /**
+     * Opens the floating chatbot and auto-submits a sample question.
+     * Chatbot.vue listens for this on `window` — the two components are
+     * siblings under App.vue with no shared state, so a custom event is
+     * the simplest hook.
+     */
+    askChatbot(question) {
+      window.dispatchEvent(new CustomEvent('cu-chatbot:ask', { detail: question }));
+    },
+  },
 };
 </script>
 
 <style scoped>
 /* ============================================================
-   Design tokens — Chitkara-inspired palette
+   Design tokens — Chandigarh University palette
    ============================================================ */
 .page {
-  --blue:        #003580;
-  --blue-mid:    #0052a3;
-  --blue-light:  #e8eef8;
-  --orange:      #e8531e;
-  --orange-dark: #c94418;
-  --orange-light:#fff3ee;
+  --maroon:      #8B0000;
+  --maroon-dark: #6B0000;
+  --maroon-mid:  #A52020;
+  --maroon-light:#f9e8e8;
+  --gold:        #C9A84C;
+  --gold-dark:   #b8943a;
+  --gold-light:  #fdf6e3;
   --ink:         #1a1f2e;
   --ink-soft:    #4a5568;
   --muted:       #718096;
@@ -416,7 +550,7 @@ export default {
    Utility Bar
    ============================================================ */
 .utility-bar {
-  background: var(--blue);
+  background: var(--maroon);
   color: rgba(255,255,255,0.88);
   font-size: 12.5px;
   padding: 7px 0;
@@ -478,7 +612,7 @@ export default {
   font-family: 'Poppins', 'Inter', sans-serif;
   font-weight: 700;
   font-size: 15px;
-  color: var(--blue);
+  color: var(--maroon);
   line-height: 1.2;
   letter-spacing: -0.01em;
 }
@@ -504,11 +638,11 @@ export default {
   transition: all 0.2s;
 }
 .nav-links a:hover {
-  color: var(--blue);
-  background: var(--blue-light);
+  color: var(--maroon);
+  background: var(--maroon-light);
 }
 .btn-apply {
-  background: var(--orange);
+  background: var(--gold);
   color: white;
   font-size: 13.5px;
   font-weight: 700;
@@ -517,11 +651,11 @@ export default {
   text-decoration: none;
   white-space: nowrap;
   transition: all 0.2s;
-  box-shadow: 0 4px 14px rgba(232,83,30,0.35);
+  box-shadow: 0 4px 14px rgba(201,168,76,0.35);
   flex-shrink: 0;
 }
 .btn-apply:hover {
-  background: var(--orange-dark);
+  background: var(--gold-dark);
   transform: translateY(-1px);
 }
 
@@ -531,7 +665,7 @@ export default {
 .hero {
   position: relative;
   background:
-    linear-gradient(135deg, #001f4d 0%, #003580 45%, #004ea8 100%);
+    linear-gradient(135deg, #3b0000 0%, #8B0000 45%, #a52020 100%);
   color: white;
   padding: 100px 28px 80px;
   overflow: hidden;
@@ -541,8 +675,8 @@ export default {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(ellipse 800px 600px at 80% 50%, rgba(232,83,30,0.15), transparent 60%),
-    radial-gradient(ellipse 600px 400px at 10% 100%, rgba(0,130,200,0.2), transparent 55%);
+    radial-gradient(ellipse 800px 600px at 80% 50%, rgba(201,168,76,0.15), transparent 60%),
+    radial-gradient(ellipse 600px 400px at 10% 100%, rgba(139,0,0,0.2), transparent 55%);
   pointer-events: none;
 }
 .hero-inner {
@@ -554,9 +688,9 @@ export default {
 }
 .hero-eyebrow {
   display: inline-block;
-  background: rgba(232,83,30,0.18);
-  border: 1px solid rgba(232,83,30,0.45);
-  color: #ffb89a;
+  background: rgba(201,168,76,0.18);
+  border: 1px solid rgba(201,168,76,0.45);
+  color: #f0d98a;
   font-size: 12.5px;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -574,7 +708,7 @@ export default {
   margin: 0 0 20px;
 }
 .hero-highlight {
-  color: #f97e50;
+  color: #f0d98a;
 }
 .hero-lead {
   font-size: 1.07rem;
@@ -591,18 +725,18 @@ export default {
   flex-wrap: wrap;
 }
 .btn-primary-hero {
-  background: var(--orange);
+  background: var(--gold);
   color: white;
   font-size: 15px;
   font-weight: 700;
   padding: 14px 32px;
   border-radius: 6px;
   text-decoration: none;
-  box-shadow: 0 8px 24px rgba(232,83,30,0.45);
+  box-shadow: 0 8px 24px rgba(201,168,76,0.45);
   transition: all 0.2s;
 }
 .btn-primary-hero:hover {
-  background: var(--orange-dark);
+  background: var(--gold-dark);
   transform: translateY(-2px);
 }
 .btn-ghost-hero {
@@ -640,7 +774,7 @@ export default {
   font-family: 'Poppins', sans-serif;
   font-size: 1.8rem;
   font-weight: 800;
-  color: #f97e50;
+  color: #f0d98a;
   line-height: 1;
   margin-bottom: 4px;
 }
@@ -660,7 +794,7 @@ export default {
    Rankings Strip
    ============================================================ */
 .rankings-strip {
-  background: var(--blue);
+  background: var(--maroon);
   padding: 22px 28px;
 }
 .rankings-inner {
@@ -682,7 +816,7 @@ export default {
   font-family: 'Poppins', sans-serif;
   font-size: 2rem;
   font-weight: 800;
-  color: #f97e50;
+  color: #f0d98a;
   line-height: 1;
 }
 .ranking-badge span {
@@ -714,7 +848,7 @@ export default {
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--orange);
+  color: var(--gold-dark);
   margin-bottom: 12px;
 }
 .section-header h2 {
@@ -754,7 +888,7 @@ export default {
   box-shadow: 0 16px 40px rgba(0,0,0,0.1);
 }
 .program-card.featured {
-  border: 2px solid var(--blue);
+  border: 2px solid var(--maroon);
 }
 .program-card-top {
   padding: 28px 24px 20px;
@@ -763,9 +897,9 @@ export default {
   align-items: center;
   justify-content: space-between;
 }
-.program-card-top.blue  { background: linear-gradient(135deg, #003580, #0052a3); }
-.program-card-top.orange { background: linear-gradient(135deg, #c94418, #e8531e); }
-.program-card-top.teal  { background: linear-gradient(135deg, #0d7377, #14a085); }
+.program-card-top.maroon  { background: linear-gradient(135deg, #6B0000, #8B0000); }
+.program-card-top.gold-bg { background: linear-gradient(135deg, #b8943a, #C9A84C); }
+.program-card-top.teal    { background: linear-gradient(135deg, #0d7377, #14a085); }
 .program-icon {
   font-size: 2.4rem;
 }
@@ -783,7 +917,7 @@ export default {
 }
 .program-card-body h3 {
   font-family: 'Poppins', sans-serif;
-  font-size: 1.25rem;
+  font-size: 1.15rem;
   font-weight: 700;
   color: var(--ink);
   margin: 0 0 10px;
@@ -812,11 +946,11 @@ export default {
   content: '✓';
   position: absolute;
   left: 0;
-  color: var(--orange);
+  color: var(--gold-dark);
   font-weight: 700;
 }
 .card-cta {
-  color: var(--blue);
+  color: var(--maroon);
   font-size: 13.5px;
   font-weight: 700;
   text-decoration: none;
@@ -827,12 +961,12 @@ export default {
   transition: all 0.2s;
 }
 .card-cta:hover {
-  color: var(--orange);
-  border-bottom-color: var(--orange);
+  color: var(--gold-dark);
+  border-bottom-color: var(--gold-dark);
 }
 
 /* ============================================================
-   Why DIT
+   Why CU
    ============================================================ */
 .strengths-grid {
   display: grid;
@@ -863,8 +997,8 @@ export default {
   font-size: 1.4rem;
   flex-shrink: 0;
 }
-.strength-icon.blue-bg   { background: var(--blue-light); }
-.strength-icon.orange-bg { background: var(--orange-light); }
+.strength-icon.maroon-bg   { background: var(--maroon-light); }
+.strength-icon.gold-icon-bg { background: var(--gold-light); }
 .strength-item h4 {
   font-size: 15px;
   font-weight: 700;
@@ -893,13 +1027,13 @@ export default {
   gap: 16px;
 }
 .placement-stat-card {
-  background: linear-gradient(135deg, var(--blue), var(--blue-mid));
+  background: linear-gradient(135deg, var(--maroon), var(--maroon-mid));
   color: white;
   border-radius: 12px;
   padding: 22px 24px;
 }
 .placement-stat-card.accent {
-  background: linear-gradient(135deg, var(--orange), var(--orange-dark));
+  background: linear-gradient(135deg, var(--gold-dark), var(--gold));
 }
 .placement-stat-card strong {
   display: block;
@@ -934,7 +1068,7 @@ export default {
   width: 40px;
   height: 40px;
   border-radius: 10px;
-  background: var(--blue);
+  background: var(--maroon);
   color: white;
   font-size: 13px;
   font-weight: 700;
@@ -974,8 +1108,8 @@ export default {
   transition: all 0.25s;
 }
 .campus-card:hover {
-  border-color: var(--blue);
-  box-shadow: 0 10px 28px rgba(0,53,128,0.1);
+  border-color: var(--maroon);
+  box-shadow: 0 10px 28px rgba(139,0,0,0.1);
   transform: translateY(-3px);
 }
 .campus-icon {
@@ -999,7 +1133,7 @@ export default {
    CTA Banner
    ============================================================ */
 .cta-banner {
-  background: linear-gradient(135deg, var(--blue) 0%, #0065c8 100%);
+  background: linear-gradient(135deg, var(--maroon-dark) 0%, var(--maroon) 100%);
   padding: 60px 28px;
 }
 .cta-banner-inner {
@@ -1027,7 +1161,7 @@ export default {
 }
 .btn-cta-white {
   background: white;
-  color: var(--blue);
+  color: var(--maroon);
   font-size: 15px;
   font-weight: 700;
   padding: 14px 30px;
@@ -1041,6 +1175,40 @@ export default {
 .btn-cta-white:hover {
   transform: translateY(-2px);
   box-shadow: 0 10px 28px rgba(0,0,0,0.2);
+}
+.cta-suggestions {
+  max-width: 1000px;
+  margin: 28px auto 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(255,255,255,0.15);
+}
+.cta-suggestions-label {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-right: 4px;
+}
+.suggestion-chip {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.25);
+  color: white;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.suggestion-chip:hover {
+  background: var(--gold);
+  border-color: var(--gold);
+  transform: translateY(-1px);
 }
 
 /* ============================================================
@@ -1096,7 +1264,7 @@ export default {
   transition: all 0.2s;
 }
 .footer-socials a:hover {
-  background: var(--orange);
+  background: var(--gold);
   color: white;
 }
 .footer-col h5 {
