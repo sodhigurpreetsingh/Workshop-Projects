@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phishing URL Detective</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary: #4f46e5;
+    --danger: #ef4444;
+    --accent: #10b981;
+    --warning: #f59e0b;
+    --surface: #fff;
+    --ink: #16181f;
+    --surface-2: #f7f7fb;
+    --border: #e8e9f2;
+    --shadow: 0 22px 54px -14px rgba(30,27,75,0.24);
+    --radius-card: 10px;
+    --radius-container: 16px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--surface-2);
+    color: var(--ink);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 32px 16px 80px;
+  }
+
+  /* ── Header ── */
+  .site-header {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+  .site-header h1 {
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+  .site-header h1 .icon { font-size: 2rem; }
+  .site-header p {
+    margin-top: 6px;
+    color: #5b5f73;
+    font-size: 1rem;
+    font-weight: 500;
+  }
+
+  /* ── Progress ── */
+  .progress-wrap {
+    width: 100%;
+    max-width: 680px;
+    margin-bottom: 24px;
+  }
+  .progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #5b5f73;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .progress-track {
+    height: 6px;
+    background: var(--border);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+  .progress-bar {
+    height: 100%;
+    background: var(--primary);
+    border-radius: 99px;
+    transition: width 0.4s cubic-bezier(.4,0,.2,1);
+  }
+
+  /* ── Main Card ── */
+  .card {
+    width: 100%;
+    max-width: 680px;
+    background: var(--surface);
+    border-radius: var(--radius-container);
+    box-shadow: var(--shadow);
+    padding: 36px 36px 32px;
+    border: 1px solid var(--border);
+  }
+
+  /* ── Address Bar ── */
+  .address-bar-wrap {
+    margin-bottom: 28px;
+  }
+  .address-bar-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: #9094a8;
+    margin-bottom: 8px;
+  }
+  .address-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #f1f3f9;
+    border: 1.5px solid #d0d3e2;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.92rem;
+    font-weight: 500;
+    color: var(--ink);
+    word-break: break-all;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.06);
+    position: relative;
+  }
+  .address-bar .padlock {
+    font-size: 1rem;
+    flex-shrink: 0;
+    line-height: 1;
+  }
+  .address-bar .padlock.secure { color: #10b981; }
+  .address-bar .padlock.insecure { color: #9094a8; }
+  .url-text { flex: 1; line-height: 1.5; }
+
+  /* ── Buttons ── */
+  .answer-btns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+  .btn-answer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 18px 10px;
+    border: none;
+    border-radius: var(--radius-card);
+    font-family: 'Inter', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: transform 0.12s, box-shadow 0.12s, opacity 0.12s;
+    outline: none;
+  }
+  .btn-answer:hover { transform: translateY(-2px); box-shadow: 0 8px 20px -4px rgba(0,0,0,0.18); }
+  .btn-answer:active { transform: translateY(0); }
+  .btn-real {
+    background: #ecfdf5;
+    color: #065f46;
+    border: 2px solid #6ee7b7;
+  }
+  .btn-fake {
+    background: #fef2f2;
+    color: #7f1d1d;
+    border: 2px solid #fca5a5;
+  }
+  .btn-answer:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
+  .btn-answer.selected-correct {
+    background: #10b981;
+    color: #fff;
+    border-color: #059669;
+    box-shadow: 0 0 0 3px rgba(16,185,129,0.25);
+  }
+  .btn-answer.selected-wrong {
+    background: #ef4444;
+    color: #fff;
+    border-color: #dc2626;
+    box-shadow: 0 0 0 3px rgba(239,68,68,0.25);
+  }
+
+  /* ── Confidence ── */
+  .confidence-wrap {
+    margin-bottom: 24px;
+  }
+  .confidence-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #5b5f73;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .confidence-label span { opacity: 0.6; font-style: italic; font-weight: 400; }
+  .confidence-options {
+    display: flex;
+    gap: 8px;
+  }
+  .confidence-option input { display: none; }
+  .confidence-option label {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 14px;
+    border-radius: 99px;
+    border: 1.5px solid var(--border);
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #5b5f73;
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .confidence-option input:checked + label {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+  }
+  .confidence-option label:hover { border-color: var(--primary); color: var(--primary); }
+
+  /* ── Reveal Card ── */
+  .reveal-card {
+    display: none;
+    border-radius: var(--radius-card);
+    padding: 22px 22px 18px;
+    margin-bottom: 20px;
+    animation: slideIn 0.3s cubic-bezier(.4,0,.2,1);
+    border: 1.5px solid transparent;
+  }
+  .reveal-card.correct {
+    background: #f0fdf4;
+    border-color: #86efac;
+  }
+  .reveal-card.wrong {
+    background: #fef2f2;
+    border-color: #fca5a5;
+  }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .reveal-banner {
+    font-size: 1.05rem;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .reveal-banner.correct { color: #065f46; }
+  .reveal-banner.wrong   { color: #7f1d1d; }
+
+  .reveal-url-wrap {
+    background: #f1f3f9;
+    border: 1.5px solid #d0d3e2;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.88rem;
+    word-break: break-all;
+    margin-bottom: 12px;
+    line-height: 1.6;
+  }
+  .highlight-domain {
+    background: #fef3c7;
+    color: #92400e;
+    border-radius: 3px;
+    padding: 0 2px;
+    font-weight: 700;
+    border-bottom: 2px solid #f59e0b;
+  }
+  .highlight-domain.danger {
+    background: #fee2e2;
+    color: #7f1d1d;
+    border-bottom-color: #ef4444;
+  }
+
+  .reveal-why {
+    font-size: 0.88rem;
+    line-height: 1.65;
+    color: #2d3046;
+    margin-bottom: 10px;
+  }
+  .reveal-why strong { color: var(--ink); }
+
+  .reveal-tip {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    background: #fffbeb;
+    border: 1.5px solid #fde68a;
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 0.83rem;
+    font-weight: 600;
+    color: #78350f;
+    line-height: 1.5;
+  }
+  .reveal-tip .tip-icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+
+  /* ── Next Button ── */
+  .btn-next {
+    display: none;
+    width: 100%;
+    padding: 15px;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-card);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.97rem;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+    transition: background 0.15s, transform 0.1s;
+  }
+  .btn-next:hover { background: #4338ca; transform: translateY(-1px); }
+  .btn-next:active { transform: translateY(0); }
+
+  /* ── Score Screen ── */
+  #score-screen {
+    display: none;
+    width: 100%;
+    max-width: 680px;
+    text-align: center;
+  }
+  .score-card {
+    background: var(--surface);
+    border-radius: var(--radius-container);
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+    padding: 48px 36px 40px;
+  }
+  .score-emoji { font-size: 3.5rem; margin-bottom: 16px; }
+  .score-big {
+    font-size: 4.5rem;
+    font-weight: 800;
+    color: var(--primary);
+    letter-spacing: -0.04em;
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+  .score-label {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #5b5f73;
+    margin-bottom: 24px;
+  }
+  .score-message {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--ink);
+    max-width: 440px;
+    margin: 0 auto 32px;
+    line-height: 1.5;
+  }
+  .score-breakdown {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 6px;
+    margin-bottom: 32px;
+  }
+  .score-dot {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+  }
+  .score-dot.correct { background: #d1fae5; }
+  .score-dot.wrong   { background: #fee2e2; }
+
+  .btn-replay {
+    padding: 16px 48px;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-card);
+    font-family: 'Inter', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+    transition: background 0.15s, transform 0.1s;
+  }
+  .btn-replay:hover { background: #4338ca; transform: translateY(-1px); }
+
+  /* ── Footer ── */
+  footer {
+    margin-top: 40px;
+    font-size: 0.78rem;
+    color: #9094a8;
+    text-align: center;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+  }
+  footer strong { color: #5b5f73; }
+
+  /* ── Misc ── */
+  .round-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--surface-2);
+    border: 1.5px solid var(--border);
+    border-radius: 99px;
+    padding: 3px 11px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #5b5f73;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    margin-bottom: 20px;
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <h1><span class="icon">🔍</span> Phishing URL Detective</h1>
+  <p>Can you spot the fake? 8 rounds — click Real or Fake</p>
+</header>
+
+<!-- Progress -->
+<div class="progress-wrap" id="progress-wrap">
+  <div class="progress-label">
+    <span id="progress-text">Round 1 of 8</span>
+    <span id="score-live">Score: 0</span>
+  </div>
+  <div class="progress-track">
+    <div class="progress-bar" id="progress-bar" style="width:0%"></div>
+  </div>
+</div>
+
+<!-- Game Card -->
+<div class="card" id="game-card">
+  <div class="round-chip" id="round-chip">Round 1</div>
+
+  <!-- Address Bar -->
+  <div class="address-bar-wrap">
+    <div class="address-bar-label">Address Bar</div>
+    <div class="address-bar" id="address-bar">
+      <span class="padlock" id="padlock">🔒</span>
+      <span class="url-text" id="url-display"></span>
+    </div>
+  </div>
+
+  <!-- Confidence -->
+  <div class="confidence-wrap">
+    <div class="confidence-label">How sure are you? <span>(optional)</span></div>
+    <div class="confidence-options">
+      <div class="confidence-option">
+        <input type="radio" name="confidence" id="conf-1" value="not-sure">
+        <label for="conf-1">🤔 Not sure</label>
+      </div>
+      <div class="confidence-option">
+        <input type="radio" name="confidence" id="conf-2" value="pretty-sure">
+        <label for="conf-2">🙂 Pretty sure</label>
+      </div>
+      <div class="confidence-option">
+        <input type="radio" name="confidence" id="conf-3" value="very-sure">
+        <label for="conf-3">💪 Very sure</label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Answer Buttons -->
+  <div class="answer-btns">
+    <button class="btn-answer btn-real" id="btn-real" onclick="answer('real')">✓ REAL</button>
+    <button class="btn-answer btn-fake" id="btn-fake" onclick="answer('fake')">✗ FAKE</button>
+  </div>
+
+  <!-- Reveal -->
+  <div class="reveal-card" id="reveal-card">
+    <div class="reveal-banner" id="reveal-banner"></div>
+    <div class="reveal-url-wrap" id="reveal-url"></div>
+    <div class="reveal-why" id="reveal-why"></div>
+    <div class="reveal-tip" id="reveal-tip"></div>
+  </div>
+
+  <!-- Next -->
+  <button class="btn-next" id="btn-next" onclick="nextRound()">Next round →</button>
+</div>
+
+<!-- Score Screen -->
+<div id="score-screen">
+  <div class="score-card">
+    <div class="score-emoji" id="score-emoji"></div>
+    <div class="score-big" id="score-big"></div>
+    <div class="score-label">out of 8</div>
+    <div class="score-message" id="score-message"></div>
+    <div class="score-breakdown" id="score-breakdown"></div>
+    <button class="btn-replay" onclick="restartGame()">↺ Play Again</button>
+  </div>
+</div>
+
+<footer>
+  Part of the <strong>How Hackers Think</strong> workshop · Educational use only
+</footer>
+
+<script>
+const ROUNDS = [
+  {
+    url: "https://paypa1.com/login",
+    secure: true,
+    answer: "fake",
+    registrableDomain: "paypa1.com",
+    registrableDanger: true,
+    why: `<strong>Typosquatting:</strong> The digit <strong>"1"</strong> replaces the letter <strong>"l"</strong> in "paypal" — giving <strong>paypa1.com</strong>. At a glance, especially in certain fonts, these look identical. Attackers register these one-character-off domains and clone the real login page.`,
+    tip: "💡 Tip: Before entering credentials, read the domain letter-by-letter. Look for digits (0, 1) substituted for similar-looking letters (o, l, i).",
+    highlightSlice: { text: "paypa1.com", danger: true }
+  },
+  {
+    url: "https://www.amazon.com/gp/cart",
+    secure: true,
+    answer: "real",
+    registrableDomain: "amazon.com",
+    registrableDanger: false,
+    why: `This is a legitimate Amazon URL. The registrable domain is <strong>amazon.com</strong>, <em>www</em> is just a subdomain, and <em>/gp/cart</em> is Amazon's standard cart path. HTTPS confirms the connection is encrypted.`,
+    tip: "💡 Tip: Identify the registrable domain (the part just before the TLD). Here it's amazon.com — owned by Amazon.",
+    highlightSlice: { text: "amazon.com", danger: false }
+  },
+  {
+    url: "https://amazon.com.secure-login.net/account",
+    secure: true,
+    answer: "fake",
+    registrableDomain: "secure-login.net",
+    registrableDanger: true,
+    why: `<strong>Subdomain spoofing:</strong> "amazon.com" appears at the start, but it's just a <em>subdomain</em>. The actual registered domain — the part immediately before the TLD — is <strong>secure-login.net</strong>. Amazon has no control over this site whatsoever.`,
+    tip: "💡 Tip: Read the domain right-to-left from the first single slash. The true domain is the last two (or three) dot-separated labels before that slash.",
+    highlightSlice: { text: "secure-login.net", danger: true }
+  },
+  {
+    url: "https://google.com",
+    secure: true,
+    answer: "real",
+    registrableDomain: "google.com",
+    registrableDanger: false,
+    why: `Clean, minimal, and legitimate. <strong>google.com</strong> is owned by Alphabet Inc. There are no suspicious subdomains, no lookalike characters, no extra domains appended. HTTPS is present.`,
+    tip: "💡 Tip: Short, clean URLs with no unexpected hyphens, numbers, or extra domains are a good sign — but always verify the exact domain name.",
+    highlightSlice: { text: "google.com", danger: false }
+  },
+  {
+    url: "https://www.paypal.com-secure-login.net/signin",
+    secure: true,
+    answer: "fake",
+    registrableDomain: "com-secure-login.net",
+    registrableDanger: true,
+    why: `<strong>Domain confusion via hyphens:</strong> "paypal.com" looks like it's there, but dots in the hostname separate labels — and hyphens do <em>not</em>. The actual registered domain is <strong>com-secure-login.net</strong>. "www.paypal" is just the subdomain prefix.`,
+    tip: "💡 Tip: Hyphens are part of the same domain label; only <em>dots</em> separate labels. Always find the last label before the TLD to identify the true domain.",
+    highlightSlice: { text: "com-secure-login.net", danger: true }
+  },
+  {
+    url: "https://github.com/torvalds/linux",
+    secure: true,
+    answer: "real",
+    registrableDomain: "github.com",
+    registrableDanger: false,
+    why: `This is the real GitHub repository for the Linux kernel, maintained by Linus Torvalds. The domain is <strong>github.com</strong> — legitimate — and the path <em>/torvalds/linux</em> follows GitHub's standard username/repo pattern.`,
+    tip: "💡 Tip: URL paths after the domain (like /username/repo) can be anything — only the domain itself tells you who actually controls the server.",
+    highlightSlice: { text: "github.com", danger: false }
+  },
+  {
+    url: "https://xn--pple-43d.com",
+    secure: true,
+    answer: "fake",
+    registrableDomain: "xn--pple-43d.com",
+    registrableDanger: true,
+    decodedNote: true,
+    why: `<strong>IDN homograph attack (Punycode):</strong> <code>xn--pple-43d.com</code> is the Punycode encoding of <strong>аpple.com</strong> — where the first "а" is the Cyrillic letter U+0430, not the Latin "a". They're visually identical in most fonts. Browsers sometimes show the decoded form, making this nearly undetectable.`,
+    tip: "💡 Tip: If a URL looks right but triggers a security warning, or you see 'xn--' in the raw address bar, investigate. Hover to see the actual encoded domain.",
+    highlightSlice: { text: "xn--pple-43d.com", danger: true }
+  },
+  {
+    url: "https://accounts.google.com.phishing-site.ru/signin",
+    secure: true,
+    answer: "fake",
+    registrableDomain: "phishing-site.ru",
+    registrableDanger: true,
+    why: `<strong>Subdomain spoofing, classic form:</strong> "accounts.google.com" looks exactly like a real Google login URL — but it's just the subdomain. The actual registered domain is <strong>phishing-site.ru</strong>, a Russian-TLD site with zero connection to Google.`,
+    tip: "💡 Tip: Seeing a legitimate-looking name before the domain is a major red flag. Always verify the real domain by reading right-to-left from the first '/'.",
+    highlightSlice: { text: "phishing-site.ru", danger: true }
+  }
+];
+
+let currentRound = 0;
+let score = 0;
+let results = [];
+let answered = false;
+
+function renderRound() {
+  const r = ROUNDS[currentRound];
+  answered = false;
+
+  // Progress
+  const pct = (currentRound / 8) * 100;
+  document.getElementById('progress-bar').style.width = pct + '%';
+  document.getElementById('progress-text').textContent = `Round ${currentRound + 1} of 8`;
+  document.getElementById('score-live').textContent = `Score: ${score}`;
+  document.getElementById('round-chip').textContent = `Round ${currentRound + 1}`;
+
+  // Address bar
+  document.getElementById('url-display').textContent = r.url;
+  const padlock = document.getElementById('padlock');
+  if (r.secure) {
+    padlock.textContent = '🔒';
+    padlock.className = 'padlock secure';
+    padlock.title = 'HTTPS — connection is encrypted';
+  } else {
+    padlock.textContent = '🔓';
+    padlock.className = 'padlock insecure';
+    padlock.title = 'HTTP — not encrypted';
+  }
+
+  // Reset confidence
+  document.querySelectorAll('input[name="confidence"]').forEach(r => r.checked = false);
+
+  // Reset buttons
+  const btnReal = document.getElementById('btn-real');
+  const btnFake = document.getElementById('btn-fake');
+  btnReal.disabled = false;
+  btnFake.disabled = false;
+  btnReal.className = 'btn-answer btn-real';
+  btnFake.className = 'btn-answer btn-fake';
+
+  // Hide reveal + next
+  const rev = document.getElementById('reveal-card');
+  rev.style.display = 'none';
+  rev.className = 'reveal-card';
+  document.getElementById('btn-next').style.display = 'none';
+}
+
+function buildHighlightedURL(url, slice) {
+  const idx = url.indexOf(slice.text);
+  if (idx === -1) return escHtml(url);
+  const before = escHtml(url.slice(0, idx));
+  const match  = escHtml(slice.text);
+  const after  = escHtml(url.slice(idx + slice.text.length));
+  const cls    = slice.danger ? 'highlight-domain danger' : 'highlight-domain';
+  return `${before}<span class="${cls}">${match}</span>${after}`;
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function answer(choice) {
+  if (answered) return;
+  answered = true;
+
+  const r = ROUNDS[currentRound];
+  const correct = (choice === r.answer);
+  if (correct) score++;
+  results.push(correct);
+
+  document.getElementById('score-live').textContent = `Score: ${score}`;
+
+  // Style buttons
+  const btnReal = document.getElementById('btn-real');
+  const btnFake = document.getElementById('btn-fake');
+  btnReal.disabled = true;
+  btnFake.disabled = true;
+
+  if (choice === 'real') {
+    btnReal.className = 'btn-answer btn-real ' + (correct ? 'selected-correct' : 'selected-wrong');
+  } else {
+    btnFake.className = 'btn-answer btn-fake ' + (correct ? 'selected-correct' : 'selected-wrong');
+  }
+
+  // Build reveal
+  const rev = document.getElementById('reveal-card');
+  rev.className = 'reveal-card ' + (correct ? 'correct' : 'wrong');
+
+  const banner = document.getElementById('reveal-banner');
+  banner.className = 'reveal-banner ' + (correct ? 'correct' : 'wrong');
+  banner.innerHTML = correct
+    ? '✓ CORRECT — well spotted!'
+    : `✗ WRONG — this URL is ${r.answer.toUpperCase()}`;
+
+  // Highlighted URL
+  const revUrl = document.getElementById('reveal-url');
+  let urlHtml = buildHighlightedURL(r.url, r.highlightSlice);
+  if (r.decodedNote) {
+    urlHtml += `<br><span style="font-size:0.78rem;color:#6b7280;font-family:'Inter',sans-serif;font-weight:500;">↳ Decoded: <strong style="color:#7f1d1d;">аpple.com</strong> (Cyrillic "а" U+0430, not Latin "a")</span>`;
+  }
+  revUrl.innerHTML = urlHtml;
+
+  // Highlighted label below URL
+  const labelColor = r.registrableDanger ? '#7f1d1d' : '#065f46';
+  const labelBg    = r.registrableDanger ? '#fee2e2' : '#d1fae5';
+  revUrl.innerHTML += `<br><span style="display:inline-block;margin-top:6px;background:${labelBg};color:${labelColor};border-radius:5px;padding:1px 8px;font-size:0.78rem;font-weight:700;font-family:'Inter',sans-serif;">Registered domain: ${escHtml(r.registrableDomain)}</span>`;
+
+  document.getElementById('reveal-why').innerHTML = r.why;
+  document.getElementById('reveal-tip').innerHTML = `<span class="tip-icon">💡</span><span>${r.tip.replace('💡 Tip: ','')}</span>`;
+
+  rev.style.display = 'block';
+
+  const btnNext = document.getElementById('btn-next');
+  btnNext.style.display = 'block';
+  if (currentRound === 7) {
+    btnNext.textContent = 'See my results →';
+  } else {
+    btnNext.textContent = 'Next round →';
+  }
+}
+
+function nextRound() {
+  currentRound++;
+  if (currentRound >= 8) {
+    showScore();
+  } else {
+    renderRound();
+  }
+}
+
+function showScore() {
+  document.getElementById('progress-wrap').style.display = 'none';
+  document.getElementById('game-card').style.display = 'none';
+
+  const screen = document.getElementById('score-screen');
+  screen.style.display = 'block';
+
+  document.getElementById('score-big').textContent = score + ' / 8';
+
+  let emoji, msg;
+  if (score <= 3) {
+    emoji = '😬';
+    msg = '"Keep practising — attackers count on this confusion"';
+  } else if (score <= 6) {
+    emoji = '🙂';
+    msg = '"Good instincts — a few tricks slipped through"';
+  } else {
+    emoji = '🏆';
+    msg = '"Excellent — you think like a security analyst"';
+  }
+  document.getElementById('score-emoji').textContent = emoji;
+  document.getElementById('score-message').textContent = msg;
+
+  // Breakdown dots
+  const bd = document.getElementById('score-breakdown');
+  bd.innerHTML = '';
+  results.forEach((c, i) => {
+    const d = document.createElement('div');
+    d.className = 'score-dot ' + (c ? 'correct' : 'wrong');
+    d.title = `Round ${i+1}: ${c ? 'Correct' : 'Wrong'}`;
+    d.textContent = c ? '✓' : '✗';
+    bd.appendChild(d);
+  });
+}
+
+function restartGame() {
+  currentRound = 0;
+  score = 0;
+  results = [];
+  answered = false;
+
+  document.getElementById('score-screen').style.display = 'none';
+  document.getElementById('progress-wrap').style.display = 'block';
+  document.getElementById('game-card').style.display = 'block';
+
+  renderRound();
+}
+
+// Init
+renderRound();
+</script>
+</body>
+</html>

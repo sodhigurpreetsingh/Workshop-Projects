@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hallucination Spotter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary: #4f46e5;
+    --secondary: #8b5cf6;
+    --accent: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --surface: #fff;
+    --ink: #16181f;
+    --ink-soft: #454a58;
+    --border: #e8e9f2;
+    --surface-2: #f7f7fb;
+    --shadow: 0 22px 54px -14px rgba(30,27,75,0.18);
+    --radius-card: 10px;
+    --radius-container: 16px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--surface-2);
+    color: var(--ink);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 32px 16px 80px;
+  }
+
+  /* ── Header ── */
+  .site-header {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+  .site-header h1 {
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    color: var(--ink);
+  }
+  .site-header h1 .icon { font-size: 2rem; }
+  .site-header p {
+    margin-top: 8px;
+    color: var(--ink-soft);
+    font-size: 1rem;
+    font-weight: 500;
+    max-width: 520px;
+  }
+
+  /* ── Progress ── */
+  .progress-wrap {
+    width: 100%;
+    max-width: 700px;
+    margin-bottom: 20px;
+  }
+  .progress-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--ink-soft);
+    margin-bottom: 7px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .score-live {
+    color: var(--primary);
+  }
+  .progress-track {
+    height: 6px;
+    background: var(--border);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary), var(--secondary));
+    border-radius: 99px;
+    transition: width 0.4s cubic-bezier(.4,0,.2,1);
+    width: 0%;
+  }
+
+  /* ── Card container ── */
+  .card {
+    width: 100%;
+    max-width: 700px;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-container);
+    box-shadow: var(--shadow);
+    padding: 28px 32px 32px;
+    margin-bottom: 20px;
+  }
+
+  /* ── Prompt pill ── */
+  .prompt-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface-2);
+    border: 1.5px solid var(--border);
+    border-radius: 99px;
+    padding: 6px 14px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--ink-soft);
+    margin-bottom: 20px;
+    letter-spacing: 0.01em;
+  }
+  .prompt-pill .prompt-label {
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.7rem;
+    color: var(--primary);
+    font-weight: 700;
+  }
+  .prompt-pill .prompt-text {
+    color: var(--ink);
+    font-weight: 500;
+    font-size: 0.85rem;
+  }
+
+  /* ── AI response bubble ── */
+  .ai-bubble {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-card);
+    padding: 18px 20px;
+    margin-bottom: 24px;
+  }
+  .ai-avatar {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    box-shadow: 0 2px 8px rgba(79,70,229,0.25);
+  }
+  .ai-body {
+    flex: 1;
+    min-width: 0;
+  }
+  .ai-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--primary);
+    margin-bottom: 8px;
+  }
+  .ai-text {
+    font-size: 0.96rem;
+    line-height: 1.65;
+    color: var(--ink);
+    font-weight: 400;
+  }
+  .ai-text code, .ai-text .mono {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.88rem;
+    background: #f0f0f8;
+    padding: 1px 5px;
+    border-radius: 4px;
+    color: var(--primary);
+  }
+  .ai-text pre {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.84rem;
+    background: #1a1b26;
+    color: #a9b1d6;
+    padding: 16px 18px;
+    border-radius: var(--radius-card);
+    margin-top: 12px;
+    overflow-x: auto;
+    line-height: 1.7;
+    border: 1px solid #2d2f40;
+  }
+  .ai-text pre .kw { color: #bb9af7; }
+  .ai-text pre .fn { color: #7aa2f7; }
+  .ai-text pre .str { color: #9ece6a; }
+  .ai-text pre .cm { color: #565f89; font-style: italic; }
+  .ai-text pre .num { color: #ff9e64; }
+
+  /* ── Buttons ── */
+  .btn-row {
+    display: flex;
+    gap: 14px;
+  }
+  .btn {
+    flex: 1;
+    padding: 14px 20px;
+    border: none;
+    border-radius: var(--radius-card);
+    font-family: 'Inter', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.13s, box-shadow 0.13s, opacity 0.13s;
+    letter-spacing: 0.01em;
+  }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,0.12); }
+  .btn:active { transform: translateY(0); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+  .btn-real {
+    background: linear-gradient(135deg, #059669, #10b981);
+    color: #fff;
+    box-shadow: 0 3px 12px rgba(16,185,129,0.28);
+  }
+  .btn-hallucination {
+    background: linear-gradient(135deg, #d97706, #f59e0b);
+    color: #fff;
+    box-shadow: 0 3px 12px rgba(245,158,11,0.28);
+  }
+
+  /* ── Reveal card ── */
+  .reveal-card {
+    display: none;
+    margin-top: 20px;
+    border-radius: var(--radius-card);
+    overflow: hidden;
+    border: 1.5px solid var(--border);
+    animation: slideDown 0.3s cubic-bezier(.4,0,.2,1);
+  }
+  .reveal-card.show { display: block; }
+
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .reveal-banner {
+    padding: 12px 20px;
+    font-size: 1rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .reveal-banner.correct {
+    background: #d1fae5;
+    color: #065f46;
+    border-bottom: 1.5px solid #a7f3d0;
+  }
+  .reveal-banner.wrong {
+    background: #fee2e2;
+    color: #991b1b;
+    border-bottom: 1.5px solid #fca5a5;
+  }
+  .reveal-body {
+    padding: 18px 20px;
+    background: var(--surface);
+  }
+  .reveal-answer-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 6px;
+  }
+  .reveal-answer-label.is-real { color: #059669; }
+  .reveal-answer-label.is-hallucination { color: #d97706; }
+  .reveal-explanation {
+    font-size: 0.92rem;
+    line-height: 1.6;
+    color: var(--ink);
+    margin-bottom: 14px;
+  }
+  .reveal-tip {
+    background: #eff6ff;
+    border: 1.5px solid #bfdbfe;
+    border-radius: 8px;
+    padding: 11px 15px;
+    font-size: 0.84rem;
+    color: #1e40af;
+    font-weight: 500;
+    line-height: 1.5;
+  }
+  .reveal-tip strong {
+    font-weight: 700;
+  }
+
+  /* ── Next button ── */
+  .btn-next {
+    display: none;
+    width: 100%;
+    max-width: 700px;
+    padding: 15px;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-card);
+    font-family: 'Inter', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.13s, box-shadow 0.13s;
+    box-shadow: 0 4px 14px rgba(79,70,229,0.3);
+    letter-spacing: 0.01em;
+  }
+  .btn-next:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(79,70,229,0.35); }
+  .btn-next:active { transform: translateY(0); }
+  .btn-next.show { display: block; animation: fadeIn 0.25s ease; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  /* ── Score screen ── */
+  #score-screen {
+    display: none;
+    width: 100%;
+    max-width: 700px;
+    animation: fadeIn 0.4s ease;
+  }
+  #score-screen.show { display: block; }
+
+  .score-card {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-container);
+    box-shadow: var(--shadow);
+    padding: 36px 36px 40px;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .score-emoji { font-size: 3rem; margin-bottom: 8px; }
+  .score-fraction {
+    font-size: 4rem;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1;
+    margin-bottom: 10px;
+  }
+  .score-verdict {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--ink);
+    margin-bottom: 6px;
+  }
+  .score-sub {
+    font-size: 0.92rem;
+    color: var(--ink-soft);
+    line-height: 1.5;
+    max-width: 440px;
+    margin: 0 auto 28px;
+  }
+
+  /* Dot grid */
+  .dot-grid {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+  }
+  .dot {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.78rem;
+    font-weight: 700;
+    flex-direction: column;
+    gap: 1px;
+  }
+  .dot.correct-dot {
+    background: #d1fae5;
+    color: #065f46;
+    border: 2px solid #6ee7b7;
+  }
+  .dot.wrong-dot {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 2px solid #fca5a5;
+  }
+  .dot-round {
+    font-size: 0.62rem;
+    font-weight: 600;
+    opacity: 0.7;
+  }
+
+  /* Insight box */
+  .insight-box {
+    background: linear-gradient(135deg, #eef2ff, #f5f3ff);
+    border: 1.5px solid #c7d2fe;
+    border-radius: var(--radius-card);
+    padding: 18px 22px;
+    margin-bottom: 28px;
+    text-align: left;
+  }
+  .insight-box strong {
+    display: block;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--primary);
+    font-weight: 700;
+    margin-bottom: 7px;
+  }
+  .insight-box p {
+    font-size: 0.92rem;
+    line-height: 1.6;
+    color: var(--ink);
+    font-weight: 500;
+  }
+
+  .btn-replay {
+    display: inline-block;
+    padding: 14px 36px;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-card);
+    font-family: 'Inter', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.13s, box-shadow 0.13s;
+    box-shadow: 0 4px 14px rgba(79,70,229,0.3);
+  }
+  .btn-replay:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(79,70,229,0.35); }
+
+  /* ── Footer ── */
+  footer {
+    margin-top: 40px;
+    font-size: 0.8rem;
+    color: #9497a8;
+    font-weight: 500;
+    text-align: center;
+  }
+
+  /* ── Round label ── */
+  .round-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: var(--ink-soft);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .round-label span.rn {
+    color: var(--primary);
+  }
+
+  @media (max-width: 500px) {
+    .card { padding: 20px 18px 22px; }
+    .btn-row { flex-direction: column; }
+    .site-header h1 { font-size: 1.5rem; }
+    .score-fraction { font-size: 3rem; }
+    .score-card { padding: 24px 20px 28px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="site-header">
+  <h1><span class="icon">🔍</span> Hallucination Spotter</h1>
+  <p>Can you tell when the AI is making things up? 8 rounds — Real or Hallucination?</p>
+</header>
+
+<!-- Progress -->
+<div class="progress-wrap">
+  <div class="progress-meta">
+    <span id="round-counter">Round 1 of 8</span>
+    <span class="score-live">Score: <span id="score-display">0</span></span>
+  </div>
+  <div class="progress-track">
+    <div class="progress-fill" id="progress-fill"></div>
+  </div>
+</div>
+
+<!-- Game area -->
+<div id="game-area">
+  <!-- Card injected by JS -->
+</div>
+
+<!-- Next button -->
+<button class="btn-next" id="btn-next">Next Round →</button>
+
+<!-- Score screen -->
+<div id="score-screen">
+  <div class="score-card">
+    <div class="score-emoji" id="score-emoji">🎯</div>
+    <div class="score-fraction" id="score-fraction">0 / 8</div>
+    <div class="score-verdict" id="score-verdict"></div>
+    <div class="score-sub" id="score-sub"></div>
+
+    <div class="dot-grid" id="dot-grid"></div>
+
+    <div class="insight-box">
+      <strong>Key Insight</strong>
+      <p>The danger isn't that hallucinations look wrong — it's that they look exactly like correct answers. Always verify facts, citations, and statistics independently.</p>
+    </div>
+
+    <button class="btn-replay" onclick="startGame()">↺ Play Again</button>
+  </div>
+</div>
+
+<footer>Part of the How LLMs Work workshop · Educational use only</footer>
+
+<script>
+const rounds = [
+  {
+    num: 1,
+    prompt: "Who wrote the novel 'The Great Gatsby'?",
+    response: `The Great Gatsby was written by F. Scott Fitzgerald and published in 1925. It was initially a commercial disappointment, selling only 3,000 copies in its first year.`,
+    isReal: false,
+    revealLabel: "HALLUCINATION",
+    explanation: "The author and publication date are correct. But '3,000 copies' is fabricated — the actual first-year sales were around 20,870 copies. LLMs often invent precise-sounding statistics when they don't know the exact figure, stating them with the same confidence as facts they do know.",
+    tip: "<strong>Watch out for:</strong> Specific numbers stated with confidence — sales figures, statistics, percentages. These are high-risk for fabrication."
+  },
+  {
+    num: 2,
+    prompt: "What is the time complexity of binary search?",
+    response: `Binary search has a time complexity of O(log n) in both average and worst cases. This is because each comparison eliminates half the remaining search space, so the maximum number of comparisons needed is log₂(n).`,
+    isReal: true,
+    revealLabel: "REAL",
+    explanation: "This is accurate. Binary search eliminates half the search space per step: 1,000 elements → max 10 comparisons (log₂(1000) ≈ 10). The model is on solid ground with well-established CS theory.",
+    tip: "<strong>Generally reliable:</strong> Mathematics, established CS theory, and well-documented algorithms. The more something appears in textbooks and structured documentation, the less likely fabrication is."
+  },
+  {
+    num: 3,
+    prompt: "Can you cite the research paper that introduced the Transformer architecture?",
+    response: `Certainly! The Transformer was introduced in "Attention Is All You Need" by Vaswani et al., published at NeurIPS 2017. The paper has been cited over 100,000 times and the lead author was Ashish Vaswani from Google Brain. The DOI is 10.48550/arXiv.1706.03762.`,
+    isReal: false,
+    revealLabel: "HALLUCINATION",
+    explanation: "Everything here happens to be correct — but this is exactly what makes hallucinated citations dangerous. LLMs can generate fake paper titles, fake authors, and fake DOIs in the same confident tone. Always verify citations in Google Scholar or arXiv before using them.",
+    tip: "<strong>Citations are high risk:</strong> Models generate fake DOIs, wrong venues, wrong authors — and they look identical to real ones. Never cite a paper without checking arXiv, Google Scholar, or the ACL Anthology."
+  },
+  {
+    num: 4,
+    prompt: "What is the capital of Australia?",
+    response: `The capital of Australia is Sydney, which is also the country's largest city and home to the iconic Opera House.`,
+    isReal: false,
+    revealLabel: "HALLUCINATION",
+    explanation: "A classic hallucination. Australia's capital is Canberra — a purpose-built capital city established in 1913 precisely to settle the rivalry between Sydney and Melbourne. The model confused 'largest city' with 'capital city'.",
+    tip: "<strong>Common pattern:</strong> Confusing the most famous thing with the correct answer. Sydney is famous; Canberra is the capital. Always double-check geography, capitals, and 'most X' claims."
+  },
+  {
+    num: 5,
+    prompt: "Explain what a SQL JOIN does",
+    response: `A SQL JOIN combines rows from two or more tables based on a related column. For example, an INNER JOIN returns only rows where the condition matches in both tables. A LEFT JOIN returns all rows from the left table plus matching rows from the right — unmatched rows get NULL values.`,
+    isReal: true,
+    revealLabel: "REAL",
+    explanation: "Correct and well-explained. SQL fundamentals are well-represented in training data, so models are generally reliable on these topics.",
+    tip: "<strong>Generally reliable:</strong> Core SQL, widely-used APIs, and foundational database concepts. High-confidence areas: math, established CS theory, well-documented standard libraries."
+  },
+  {
+    num: 6,
+    prompt: "Who is the CEO of OpenAI?",
+    response: `The CEO of OpenAI is Sam Altman. He co-founded the company alongside Elon Musk, Greg Brockman, and others in 2015. Altman previously served as president of Y Combinator from 2012 to 2019.`,
+    isReal: false,
+    revealLabel: "HALLUCINATION",
+    explanation: "Sam Altman became Y Combinator's president in 2014, not 2012. The confident wrong date is a hallucination. More broadly: leadership and current-events questions go stale quickly as companies change — always verify live facts from current sources.",
+    tip: "<strong>Dates go wrong fast:</strong> Start years, tenure dates, founding years — models often get these slightly off. And CEO/leadership facts become stale as companies change."
+  },
+  {
+    num: 7,
+    prompt: "Write a Python function to check if a number is prime",
+    response: `<pre><span class="kw">def</span> <span class="fn">is_prime</span>(n):
+    <span class="kw">if</span> n &lt; <span class="num">2</span>:
+        <span class="kw">return</span> <span class="kw">False</span>
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(<span class="num">2</span>, <span class="fn">int</span>(n**<span class="num">0.5</span>) + <span class="num">1</span>):
+        <span class="kw">if</span> n % i == <span class="num">0</span>:
+            <span class="kw">return</span> <span class="kw">False</span>
+    <span class="kw">return</span> <span class="kw">True</span></pre>`,
+    isReal: true,
+    revealLabel: "REAL",
+    explanation: "This is correct. The algorithm checks divisors only up to √n — since if n has a factor larger than √n, it must also have a corresponding factor smaller than √n. Models are generally reliable on standard algorithms with clear, verifiable correct answers.",
+    tip: "<strong>Code is verifiable:</strong> Unlike factual claims, code can be run and tested. For algorithmic tasks with clear correct outputs, LLM outputs are generally high quality — but still test edge cases."
+  },
+  {
+    num: 8,
+    prompt: "What does HTTP 418 status code mean?",
+    response: `HTTP 418 is an unofficial status code that means "I'm a teapot." It was defined in RFC 2324 as an April Fools' joke in 1998 by Larry Masinter. The code is supposed to be returned by teapots that are asked to brew coffee. It has no practical use but some servers implement it as an easter egg.`,
+    isReal: true,
+    revealLabel: "REAL",
+    explanation: "Completely true — HTTP 418 'I'm a teapot' is real, defined in RFC 2324 (April 1, 1998). This is a trap round: the answer sounds made-up but is genuine. Hallucinations are hard to spot precisely because real facts can sound equally implausible.",
+    tip: "<strong>The core problem:</strong> You can't tell hallucinations from real answers by whether they sound weird. Both look identical. Verification is the only defense — not intuition."
+  }
+];
+
+let currentRound = 0;
+let score = 0;
+let answered = false;
+let results = [];
+
+function startGame() {
+  currentRound = 0;
+  score = 0;
+  answered = false;
+  results = [];
+  document.getElementById('score-screen').classList.remove('show');
+  document.getElementById('btn-next').classList.remove('show');
+  document.getElementById('score-display').textContent = '0';
+  renderRound();
+}
+
+function renderRound() {
+  answered = false;
+  const r = rounds[currentRound];
+  const total = rounds.length;
+
+  // Progress
+  document.getElementById('round-counter').textContent = `Round ${currentRound + 1} of ${total}`;
+  document.getElementById('progress-fill').style.width = `${(currentRound / total) * 100}%`;
+
+  const gameArea = document.getElementById('game-area');
+  gameArea.innerHTML = `
+    <div class="card" id="main-card">
+      <div class="round-label">Round <span class="rn">${r.num}</span> of ${total}</div>
+      <div class="prompt-pill">
+        <span class="prompt-label">Prompt</span>
+        <span class="prompt-text">${escapeHtml(r.prompt)}</span>
+      </div>
+      <div class="ai-bubble">
+        <div class="ai-avatar">✦</div>
+        <div class="ai-body">
+          <div class="ai-label">AI Response</div>
+          <div class="ai-text" id="response-text">${r.response}</div>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-real" id="btn-real" onclick="answer(true)">✓ REAL</button>
+        <button class="btn btn-hallucination" id="btn-hall" onclick="answer(false)">🤔 HALLUCINATION</button>
+      </div>
+      <div class="reveal-card" id="reveal-card">
+        <div class="reveal-banner" id="reveal-banner"></div>
+        <div class="reveal-body">
+          <div class="reveal-answer-label" id="reveal-answer-label"></div>
+          <p class="reveal-explanation" id="reveal-explanation"></p>
+          <div class="reveal-tip" id="reveal-tip"></div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('btn-next').classList.remove('show');
+}
+
+function answer(guessedReal) {
+  if (answered) return;
+  answered = true;
+
+  const r = rounds[currentRound];
+  const isCorrect = (guessedReal === r.isReal);
+  if (isCorrect) score++;
+  results.push(isCorrect);
+
+  document.getElementById('score-display').textContent = score;
+  document.getElementById('btn-real').disabled = true;
+  document.getElementById('btn-hall').disabled = true;
+
+  // Highlight chosen button
+  if (guessedReal) {
+    document.getElementById('btn-real').style.outline = '3px solid #059669';
+  } else {
+    document.getElementById('btn-hall').style.outline = '3px solid #d97706';
+  }
+
+  // Reveal
+  const banner = document.getElementById('reveal-banner');
+  banner.className = 'reveal-banner ' + (isCorrect ? 'correct' : 'wrong');
+  banner.innerHTML = isCorrect
+    ? '✓ Correct!'
+    : `✗ Not quite — this was a <strong>${r.revealLabel}</strong>`;
+
+  const answerLabel = document.getElementById('reveal-answer-label');
+  answerLabel.className = 'reveal-answer-label ' + (r.isReal ? 'is-real' : 'is-hallucination');
+  answerLabel.textContent = r.isReal ? '✓ This was a REAL response' : '⚠ This was a HALLUCINATION';
+
+  document.getElementById('reveal-explanation').textContent = r.explanation;
+  document.getElementById('reveal-tip').innerHTML = r.tip;
+
+  document.getElementById('reveal-card').classList.add('show');
+
+  const btnNext = document.getElementById('btn-next');
+  btnNext.classList.add('show');
+  if (currentRound === rounds.length - 1) {
+    btnNext.textContent = 'See Results →';
+  } else {
+    btnNext.textContent = 'Next Round →';
+  }
+}
+
+document.getElementById('btn-next').addEventListener('click', () => {
+  currentRound++;
+  if (currentRound >= rounds.length) {
+    showScore();
+  } else {
+    renderRound();
+  }
+});
+
+function showScore() {
+  document.getElementById('game-area').innerHTML = '';
+  document.getElementById('btn-next').classList.remove('show');
+
+  const total = rounds.length;
+  document.getElementById('score-fraction').textContent = `${score} / ${total}`;
+  document.getElementById('progress-fill').style.width = '100%';
+  document.getElementById('round-counter').textContent = `Finished`;
+
+  let emoji, verdict, sub;
+  if (score <= 3) {
+    emoji = '🧠';
+    verdict = 'Hallucinations are hard to spot';
+    sub = "That's what makes them dangerous. Even experts get fooled — the whole point is that hallucinations are designed to look exactly like correct answers.";
+  } else if (score <= 6) {
+    emoji = '👀';
+    verdict = 'Good instincts — some tricky ones slipped through';
+    sub = "You caught most of the hallucinations, but a few fooled you. The sneaky ones often involve plausible-sounding details in otherwise correct responses.";
+  } else {
+    emoji = '🔬';
+    verdict = 'Sharp eye — you think like an AI safety researcher';
+    sub = "You spotted almost every trap. Remember: even with sharp instincts, always verify independently. Confidence isn't a substitute for checking.";
+  }
+
+  document.getElementById('score-emoji').textContent = emoji;
+  document.getElementById('score-verdict').textContent = verdict;
+  document.getElementById('score-sub').textContent = sub;
+
+  // Dot grid
+  const dotGrid = document.getElementById('dot-grid');
+  dotGrid.innerHTML = '';
+  results.forEach((correct, i) => {
+    const dot = document.createElement('div');
+    dot.className = 'dot ' + (correct ? 'correct-dot' : 'wrong-dot');
+    dot.innerHTML = `<span>${correct ? '✓' : '✗'}</span><span class="dot-round">R${i + 1}</span>`;
+    dotGrid.appendChild(dot);
+  });
+
+  document.getElementById('score-screen').classList.add('show');
+}
+
+function escapeHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Start on load
+startGame();
+</script>
+</body>
+</html>

@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Token Visualizer — How LLMs Work</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary: #4f46e5;
+    --secondary: #8b5cf6;
+    --accent: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --surface: #fff;
+    --ink: #16181f;
+    --ink-soft: #454a58;
+    --border: #e8e9f2;
+    --surface-2: #f7f7fb;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: linear-gradient(135deg, #eef2ff 0%, #f5f3ff 50%, #ecfdf5 100%);
+    min-height: 100vh;
+    color: var(--ink);
+    padding: 32px 16px 48px;
+  }
+
+  .main-card {
+    max-width: 900px;
+    margin: 0 auto;
+    background: var(--surface);
+    border-radius: 16px;
+    box-shadow: 0 22px 54px -14px rgba(30,27,75,0.24);
+    overflow: hidden;
+  }
+
+  /* HEADER */
+  .header {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+    padding: 36px 40px 32px;
+    color: #fff;
+  }
+
+  .header-title {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 10px;
+  }
+
+  .brain-icon {
+    width: 52px;
+    height: 52px;
+    background: rgba(255,255,255,0.18);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    flex-shrink: 0;
+  }
+
+  .header h1 {
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+
+  .header p {
+    font-size: 1.05rem;
+    opacity: 0.85;
+    font-weight: 400;
+    max-width: 600px;
+    line-height: 1.5;
+  }
+
+  /* BODY */
+  .body {
+    padding: 36px 40px;
+  }
+
+  /* INPUT SECTION */
+  .section-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-soft);
+    margin-bottom: 10px;
+  }
+
+  textarea {
+    width: 100%;
+    min-height: 110px;
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    font-family: 'Inter', sans-serif;
+    font-size: 1rem;
+    color: var(--ink);
+    background: var(--surface-2);
+    resize: vertical;
+    transition: border-color 0.2s;
+    outline: none;
+    line-height: 1.6;
+  }
+
+  textarea:focus {
+    border-color: var(--primary);
+    background: var(--surface);
+  }
+
+  textarea::placeholder { color: #9ca3af; }
+
+  /* CHIPS */
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .chip {
+    background: var(--surface-2);
+    border: 1.5px solid var(--border);
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--ink-soft);
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .chip:hover {
+    background: #ede9fe;
+    border-color: var(--secondary);
+    color: var(--primary);
+  }
+
+  /* DIVIDER */
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 28px 0;
+  }
+
+  /* TOKEN DISPLAY */
+  .token-display-area {
+    min-height: 80px;
+    background: var(--surface-2);
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-content: flex-start;
+    margin-bottom: 16px;
+    transition: border-color 0.2s;
+  }
+
+  .token-display-area:has(.token-pill) {
+    border-color: #c7d2fe;
+  }
+
+  .empty-hint {
+    color: #9ca3af;
+    font-size: 0.9rem;
+    font-style: italic;
+    align-self: center;
+  }
+
+  .token-pill {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 6px;
+    padding: 4px 9px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82rem;
+    font-weight: 500;
+    line-height: 1.4;
+    white-space: pre;
+    animation: pill-in 0.2s ease both;
+    cursor: default;
+    position: relative;
+    border: 1.5px solid rgba(0,0,0,0.06);
+  }
+
+  @keyframes pill-in {
+    from { opacity: 0; transform: translateY(4px) scale(0.96); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  /* Token colour palette — 8 pastel variants */
+  .tc0 { background: #e0e7ff; color: #3730a3; }
+  .tc1 { background: #ede9fe; color: #5b21b6; }
+  .tc2 { background: #d1fae5; color: #065f46; }
+  .tc3 { background: #fef3c7; color: #92400e; }
+  .tc4 { background: #fce7f3; color: #9d174d; }
+  .tc5 { background: #dbeafe; color: #1e40af; }
+  .tc6 { background: #ffedd5; color: #9a3412; }
+  .tc7 { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
+
+  /* STATS BAR */
+  .stats-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 24px;
+    align-items: center;
+  }
+
+  .stat {
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
+  }
+
+  .stat-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--primary);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .stat-label {
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+    font-weight: 500;
+  }
+
+  .stat-divider {
+    width: 1px;
+    height: 20px;
+    background: var(--border);
+  }
+
+  .cost-badge {
+    background: #d1fae5;
+    color: #065f46;
+    border: 1.5px solid #6ee7b7;
+    border-radius: 8px;
+    padding: 4px 12px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* COMPARISON SECTION */
+  .compare-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-top: 4px;
+  }
+
+  @media (max-width: 700px) {
+    .compare-grid { grid-template-columns: 1fr; }
+    .body { padding: 24px 20px; }
+    .header { padding: 28px 20px 24px; }
+    .header h1 { font-size: 1.5rem; }
+  }
+
+  .compare-card {
+    background: var(--surface-2);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 18px;
+  }
+
+  .compare-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--ink-soft);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .compare-title span {
+    font-size: 1rem;
+  }
+
+  .compare-token-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    min-height: 50px;
+    margin-bottom: 12px;
+  }
+
+  .compare-token-wrap .token-pill {
+    font-size: 0.75rem;
+    padding: 3px 7px;
+  }
+
+  .compare-meta {
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+    line-height: 1.5;
+  }
+
+  .compare-meta strong {
+    color: var(--primary);
+    font-weight: 700;
+  }
+
+  .compare-note {
+    margin-top: 6px;
+    font-size: 0.75rem;
+    color: #6b7280;
+    font-style: italic;
+  }
+
+  /* INSIGHT BOX */
+  .insight-box {
+    background: linear-gradient(135deg, #eef2ff 0%, #f5f3ff 100%);
+    border: 1.5px solid #c7d2fe;
+    border-radius: 10px;
+    padding: 22px 24px;
+    margin-top: 4px;
+  }
+
+  .insight-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--primary);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .insight-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .insight-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 0.9rem;
+    color: var(--ink);
+    line-height: 1.5;
+  }
+
+  .insight-bullet {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    background: var(--primary);
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  /* FOOTNOTE */
+  .footnote {
+    margin-top: 20px;
+    font-size: 0.75rem;
+    color: #9ca3af;
+    text-align: center;
+    line-height: 1.6;
+  }
+
+  .footnote a {
+    color: var(--primary);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  /* FOOTER */
+  .footer {
+    background: var(--surface-2);
+    border-top: 1px solid var(--border);
+    padding: 16px 40px;
+    text-align: center;
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+  }
+</style>
+</head>
+<body>
+
+<div class="main-card">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-title">
+      <div class="brain-icon">🧠</div>
+      <h1>Token Visualizer</h1>
+    </div>
+    <p>See how LLMs actually read text — before any "intelligence" happens</p>
+  </div>
+
+  <!-- BODY -->
+  <div class="body">
+
+    <!-- INPUT -->
+    <div class="section-label">Your text</div>
+    <textarea id="inputText" rows="4" placeholder="Type or paste any text here..."></textarea>
+
+    <div class="chips" id="chips">
+      <div class="chip" data-text="Hello, how are you?">Hello, how are you?</div>
+      <div class="chip" data-text="def fibonacci(n):">def fibonacci(n):</div>
+      <div class="chip" data-text="कृत्रिम बुद्धिमत्ता">कृत्रिम बुद्धिमत्ता</div>
+      <div class="chip" data-text="The quick brown fox">The quick brown fox</div>
+      <div class="chip" data-text="gpt-4o-mini">gpt-4o-mini</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- TOKEN DISPLAY -->
+    <div class="section-label">Token breakdown</div>
+    <div class="token-display-area" id="tokenDisplay">
+      <span class="empty-hint">Tokens will appear here as you type…</span>
+    </div>
+
+    <!-- STATS -->
+    <div class="stats-bar" id="statsBar">
+      <div class="stat">
+        <span class="stat-value" id="statTokens">0</span>
+        <span class="stat-label">tokens</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat">
+        <span class="stat-value" id="statChars">0</span>
+        <span class="stat-label">chars</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat">
+        <span class="stat-value" id="statRatio">—</span>
+        <span class="stat-label">chars / token</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="cost-badge" id="statCost">$0.000000 estimated</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- COMPARISON -->
+    <div class="section-label">Token efficiency by text type</div>
+    <div class="compare-grid">
+
+      <div class="compare-card">
+        <div class="compare-title"><span>🇬🇧</span> English text</div>
+        <div class="compare-token-wrap" id="cmpEnglish"></div>
+        <div class="compare-meta">
+          <strong id="cmpEnglishCount">0</strong> tokens
+          <div class="compare-note">Common English words map closely to tokens — very efficient.</div>
+        </div>
+      </div>
+
+      <div class="compare-card">
+        <div class="compare-title"><span>🐍</span> Python code</div>
+        <div class="compare-token-wrap" id="cmpPython"></div>
+        <div class="compare-meta">
+          <strong id="cmpPythonCount">0</strong> tokens
+          <div class="compare-note">Keywords like <code style="font-family:JetBrains Mono;font-size:0.75rem">def</code>, <code style="font-family:JetBrains Mono;font-size:0.75rem">return</code> are single tokens. Code is surprisingly compact.</div>
+        </div>
+      </div>
+
+      <div class="compare-card">
+        <div class="compare-title"><span>🇮🇳</span> Hindi text</div>
+        <div class="compare-token-wrap" id="cmpHindi"></div>
+        <div class="compare-meta">
+          <strong id="cmpHindiCount">0</strong> tokens
+          <div class="compare-note">Non-Latin scripts split into more tokens per word — same meaning, higher cost.</div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- KEY INSIGHTS -->
+    <div class="insight-box">
+      <div class="insight-title">💡 Key insights</div>
+      <ul class="insight-list">
+        <li>
+          <div class="insight-bullet">1</div>
+          <div><strong>1 token ≈ 4 chars in English</strong> — GPT models were trained mostly on English, so English text is the most efficient to process.</div>
+        </li>
+        <li>
+          <div class="insight-bullet">2</div>
+          <div><strong>Code is efficient</strong> — keywords like <code style="font-family:JetBrains Mono;font-size:0.85rem">def</code>, <code style="font-family:JetBrains Mono;font-size:0.85rem">return</code>, <code style="font-family:JetBrains Mono;font-size:0.85rem">if</code> are often single tokens. Python is well-represented in training data.</div>
+        </li>
+        <li>
+          <div class="insight-bullet">3</div>
+          <div><strong>Non-English scripts cost more</strong> — Hindi and Chinese characters split into more tokens per word. The same idea expressed in Hindi may use 2–3× as many tokens as in English.</div>
+        </li>
+        <li>
+          <div class="insight-bullet">4</div>
+          <div><strong>Context limits are in tokens, not words</strong> — GPT-4o's 128K context window means ~128,000 tokens, roughly 96,000 English words — but far fewer Hindi words or lines of code.</div>
+        </li>
+      </ul>
+    </div>
+
+    <div class="footnote">
+      ⚠️ Approximation — actual GPT tokenization uses Byte-Pair Encoding (BPE) and won't match exactly.<br>
+      Try <a href="https://tiktokenizer.vercel.app" target="_blank" rel="noopener">tiktokenizer.vercel.app</a> for the real thing.
+    </div>
+
+  </div><!-- /body -->
+
+  <div class="footer">
+    Part of the <strong>How LLMs Work</strong> workshop · Educational use only
+  </div>
+
+</div><!-- /main-card -->
+
+<script>
+// ─── TOKENIZER ────────────────────────────────────────────────────────────────
+
+// Common short English words that are almost certainly 1 token each in GPT BPE
+const COMMON_WORDS = new Set([
+  'the','a','an','and','or','but','in','on','at','to','for','of','with','by',
+  'from','up','is','are','was','were','be','been','being','have','has','had',
+  'do','does','did','will','would','shall','should','may','might','can','could',
+  'not','no','yes','if','then','else','so','as','it','its','this','that','these',
+  'those','he','she','we','you','they','my','your','his','her','our','their',
+  'i','me','him','us','them','who','what','which','when','where','how','why',
+  'all','any','some','one','two','more','most','other','also','just','out',
+  'here','there','now','then','only','new','old','get','got','see','say','go',
+  'def','return','class','import','from','pass','while','elif','else','print',
+  'true','false','none','and','not','in','is','or','if','for','try','except',
+]);
+
+// Detect if a string is mostly non-Latin (CJK, Devanagari, Arabic, etc.)
+function isNonLatin(str) {
+  let nonLatin = 0;
+  for (const ch of str) {
+    const cp = ch.codePointAt(0);
+    // Devanagari: 0x0900–0x097F, CJK: 0x4E00–0x9FFF, Arabic: 0x0600–0x06FF, etc.
+    if (cp > 0x024F) nonLatin++;
+  }
+  return nonLatin / str.length > 0.4;
+}
+
+function tokenize(text) {
+  if (!text || !text.trim()) return [];
+
+  const tokens = [];
+
+  // Step 1: chunk into (optional-space)(non-space-run) or pure whitespace runs
+  // We want to attach leading space to the next word, GPT-style
+  const rawChunks = text.match(/\s*\S+|\s+/g) || [];
+
+  for (const chunk of rawChunks) {
+    // Pure whitespace chunk (e.g. multiple spaces, a tab, newline-only)
+    if (/^\s+$/.test(chunk)) {
+      // Represent each newline as its own token, spaces collapse
+      const lines = chunk.split('\n');
+      for (let i = 0; i < lines.length; i++) {
+        if (i > 0) tokens.push({ text: '\n', display: '↵\n', isSpecial: true });
+        if (lines[i].length > 0) {
+          // spaces — skip as they'll be attached to next word
+        }
+      }
+      continue;
+    }
+
+    // Pull off the leading whitespace prefix
+    const spaceMatch = chunk.match(/^(\s*)([\s\S]+)$/);
+    const spaces = spaceMatch ? spaceMatch[1] : '';
+    const word   = spaceMatch ? spaceMatch[2] : chunk;
+
+    const hasLeadingNewline = spaces.includes('\n');
+    const hasLeadingSpace   = spaces.includes(' ') || spaces.includes('\t');
+
+    if (hasLeadingNewline) {
+      tokens.push({ text: '\n', display: '↵\n', isSpecial: true });
+    }
+
+    // Now split the word itself: punctuation boundary splitting
+    // e.g. "Hello," → ["Hello", ","]
+    const parts = splitWordPunctuation(word, hasLeadingSpace && !hasLeadingNewline);
+
+    for (const part of parts) {
+      tokens.push(...subtokenize(part.text, part.prefix));
+    }
+  }
+
+  return tokens;
+}
+
+function splitWordPunctuation(word, attachSpaceToFirst) {
+  // Split trailing and leading punctuation off as their own tokens
+  const trailingPunct = word.match(/([^\w-￿]+)$/);
+  const leadingPunct  = word.match(/^([^\w-￿]+)/);
+
+  const parts = [];
+  let core = word;
+  let leading = '';
+  let trailing = '';
+
+  if (leadingPunct && leadingPunct[1].length < word.length) {
+    leading = leadingPunct[1];
+    core = core.slice(leading.length);
+  }
+  if (trailingPunct && trailingPunct[1].length < core.length) {
+    trailing = trailingPunct[1];
+    core = core.slice(0, core.length - trailing.length);
+  }
+
+  let isFirst = true;
+  if (leading) {
+    parts.push({ text: leading, prefix: isFirst && attachSpaceToFirst ? ' ' : '' });
+    isFirst = false;
+  }
+  if (core) {
+    parts.push({ text: core, prefix: isFirst && attachSpaceToFirst ? ' ' : '' });
+    isFirst = false;
+  }
+  if (trailing) {
+    parts.push({ text: trailing, prefix: '' });
+  }
+
+  if (parts.length === 0) {
+    parts.push({ text: word, prefix: attachSpaceToFirst ? ' ' : '' });
+  }
+
+  return parts;
+}
+
+function subtokenize(word, prefix) {
+  if (!word) return [];
+
+  const lc = word.toLowerCase();
+  const display = prefix + word;
+
+  // Non-Latin scripts: every ~2 chars is a token (they're multi-byte in UTF-8)
+  if (isNonLatin(word)) {
+    const chars = [...word]; // Unicode-aware split
+    const charsPerToken = 2;
+    const out = [];
+    for (let i = 0; i < chars.length; i += charsPerToken) {
+      const slice = chars.slice(i, i + charsPerToken).join('');
+      const pfx = i === 0 ? prefix : '';
+      const disp = pfx + slice;
+      out.push({
+        text: slice,
+        display: disp,
+        displayClean: disp,
+      });
+    }
+    return out;
+  }
+
+  // Pure punctuation or very short → always 1 token
+  if (word.length <= 2 || /^[^\w]+$/.test(word)) {
+    return [{ text: word, display, displayClean: display }];
+  }
+
+  // Common short English words → 1 token
+  if (COMMON_WORDS.has(lc) || (word.length <= 6 && /^[a-zA-Z]+$/.test(word))) {
+    return [{ text: word, display, displayClean: display }];
+  }
+
+  // Longer words → split into ~4-char subwords
+  const charsPerToken = 4;
+  const out = [];
+  for (let i = 0; i < word.length; i += charsPerToken) {
+    const slice = word.slice(i, i + charsPerToken);
+    const pfx = i === 0 ? prefix : '';
+    const disp = pfx + slice;
+    out.push({ text: slice, display: disp, displayClean: disp });
+  }
+  return out;
+}
+
+// ─── RENDERING ────────────────────────────────────────────────────────────────
+
+const PALETTE_SIZE = 8;
+
+function renderTokens(tokens, container) {
+  container.innerHTML = '';
+  if (!tokens || tokens.length === 0) return;
+
+  tokens.forEach((tok, i) => {
+    const pill = document.createElement('span');
+    pill.className = `token-pill tc${i % PALETTE_SIZE}`;
+    pill.style.animationDelay = `${Math.min(i * 18, 300)}ms`;
+
+    let displayText = tok.display || tok.text;
+    // Replace leading space with visible middle dot
+    displayText = displayText.replace(/^ /, '·');
+    // Newlines
+    displayText = displayText.replace(/\n/g, '↵\n');
+
+    pill.textContent = displayText;
+    pill.title = `Token ${i + 1}: "${tok.text.replace(/\n/g, '\\n')}"`;
+    container.appendChild(pill);
+  });
+}
+
+// ─── LIVE UPDATE ──────────────────────────────────────────────────────────────
+
+const inputEl     = document.getElementById('inputText');
+const displayEl   = document.getElementById('tokenDisplay');
+const statTokens  = document.getElementById('statTokens');
+const statChars   = document.getElementById('statChars');
+const statRatio   = document.getElementById('statRatio');
+const statCost    = document.getElementById('statCost');
+
+function updateMain() {
+  const text = inputEl.value;
+  const tokens = tokenize(text);
+
+  if (tokens.length === 0) {
+    displayEl.innerHTML = '<span class="empty-hint">Tokens will appear here as you type…</span>';
+  } else {
+    renderTokens(tokens, displayEl);
+  }
+
+  const tc = tokens.length;
+  const cc = text.length;
+  const ratio = tc > 0 ? (cc / tc).toFixed(1) : '—';
+  const costVal = (tc / 1_000_000 * 0.15);
+  const costStr = '$' + costVal.toFixed(6);
+
+  statTokens.textContent = tc;
+  statChars.textContent  = cc;
+  statRatio.textContent  = tc > 0 ? ratio : '—';
+  statCost.textContent   = tc > 0 ? costStr + ' est.' : '$0.000000 est.';
+}
+
+// Debounce
+let debounceTimer;
+inputEl.addEventListener('input', () => {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(updateMain, 60);
+});
+
+// Chips
+document.getElementById('chips').addEventListener('click', e => {
+  const chip = e.target.closest('.chip');
+  if (!chip) return;
+  inputEl.value = chip.dataset.text;
+  updateMain();
+  inputEl.focus();
+});
+
+// ─── COMPARISON COLUMNS ───────────────────────────────────────────────────────
+
+const COMPARE_TEXTS = {
+  english: 'The quick brown fox jumps over the lazy dog.',
+  python:  'def hello(name):\n    return f"Hello, {name}!"',
+  hindi:   'कृत्रिम बुद्धिमत्ता',
+};
+
+function initComparisons() {
+  const pairs = [
+    ['english', 'cmpEnglish', 'cmpEnglishCount'],
+    ['python',  'cmpPython',  'cmpPythonCount'],
+    ['hindi',   'cmpHindi',   'cmpHindiCount'],
+  ];
+
+  for (const [key, wrapId, countId] of pairs) {
+    const tokens = tokenize(COMPARE_TEXTS[key]);
+    const wrap   = document.getElementById(wrapId);
+    renderTokens(tokens, wrap);
+    document.getElementById(countId).textContent = tokens.length;
+  }
+}
+
+initComparisons();
+updateMain(); // initialise with empty state
+</script>
+</body>
+</html>

@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SQL Injection Lab — How Hackers Think</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary:    #4f46e5;
+      --danger:     #ef4444;
+      --accent:     #10b981;
+      --warning:    #f59e0b;
+      --surface:    #fff;
+      --ink:        #16181f;
+      --ink-soft:   #454a58;
+      --border:     #e8e9f2;
+      --surface-2:  #f7f7fb;
+      --code-bg:    #1a1b26;
+      --code-fg:    #a9b1d6;
+      --code-red:   #f7768e;
+      --code-green: #9ece6a;
+      --code-yellow:#e0af68;
+      --radius:     10px;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--surface-2);
+      color: var(--ink);
+      min-height: 100vh;
+      padding: 0 0 60px;
+    }
+
+    /* ── HEADER ─────────────────────────────────────────────────── */
+    .page-header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 28px 40px 24px;
+      text-align: center;
+    }
+    .page-header h1 {
+      font-size: 1.85rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    .page-header h1 .icon {
+      font-size: 1.6rem;
+    }
+    .page-header p {
+      margin-top: 6px;
+      color: var(--ink-soft);
+      font-size: 0.95rem;
+    }
+
+    /* ── CHIPS BAR ───────────────────────────────────────────────── */
+    .payload-bar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 40px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .payload-bar label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--ink-soft);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      white-space: nowrap;
+    }
+    .chip {
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--ink);
+      border-radius: 999px;
+      padding: 5px 14px;
+      font-size: 0.82rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 500;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .chip:hover {
+      border-color: var(--danger);
+      background: #fef2f2;
+      color: var(--danger);
+    }
+    .chip.danger-chip:hover {
+      border-color: #7c3aed;
+      background: #f5f3ff;
+      color: #7c3aed;
+    }
+
+    /* ── MAIN LAYOUT ─────────────────────────────────────────────── */
+    .main {
+      max-width: 1200px;
+      margin: 36px auto 0;
+      padding: 0 24px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    /* ── COLUMN CARD ─────────────────────────────────────────────── */
+    .col-card {
+      background: var(--surface);
+      border-radius: 16px;
+      box-shadow: 0 22px 54px -14px rgba(30,27,75,0.24);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    .col-card.vulnerable {
+      transition: box-shadow 0.3s ease;
+    }
+    .col-card.vulnerable.injecting {
+      box-shadow: 0 0 0 3px var(--danger), 0 22px 54px -14px rgba(239,68,68,0.35);
+      animation: pulse-border 1.4s ease-in-out infinite;
+    }
+    @keyframes pulse-border {
+      0%, 100% { box-shadow: 0 0 0 2px var(--danger), 0 22px 54px -14px rgba(239,68,68,0.35); }
+      50%       { box-shadow: 0 0 0 5px rgba(239,68,68,0.4), 0 22px 54px -14px rgba(239,68,68,0.5); }
+    }
+
+    .col-header {
+      padding: 18px 22px 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .col-header-left {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .col-title {
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--ink-soft);
+    }
+    .col-subtitle {
+      font-size: 0.82rem;
+      color: var(--ink-soft);
+    }
+    .col-subtitle code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      background: var(--surface-2);
+      padding: 1px 5px;
+      border-radius: 4px;
+    }
+
+    /* ── STATUS BADGE ────────────────────────────────────────────── */
+    .status-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: 999px;
+      padding: 5px 12px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+    }
+    .status-badge.safe {
+      background: #dcfce7;
+      color: #15803d;
+    }
+    .status-badge.danger {
+      background: #fef2f2;
+      color: var(--danger);
+      animation: badge-flash 0.8s ease-in-out infinite alternate;
+    }
+    @keyframes badge-flash {
+      from { opacity: 1; }
+      to   { opacity: 0.6; }
+    }
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: currentColor;
+      flex-shrink: 0;
+    }
+
+    /* ── FORM BODY ───────────────────────────────────────────────── */
+    .col-body {
+      padding: 20px 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      flex: 1;
+    }
+
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .field-group label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--ink-soft);
+    }
+    .field-group input {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.9rem;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--ink);
+      background: var(--surface);
+      outline: none;
+      transition: border-color 0.15s ease;
+    }
+    .field-group input:focus {
+      border-color: var(--primary);
+    }
+    .vulnerable .field-group input.injected {
+      border-color: var(--danger);
+      background: #fff8f8;
+    }
+
+    /* ── CODE BLOCK ──────────────────────────────────────────────── */
+    .query-block {
+      border-radius: var(--radius);
+      background: var(--code-bg);
+      padding: 14px 16px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      line-height: 1.7;
+      overflow-x: auto;
+      position: relative;
+    }
+    .query-block .ql {
+      font-size: 0.68rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #565f89;
+      margin-bottom: 6px;
+      font-family: 'Inter', sans-serif;
+    }
+    .query-block code {
+      font-family: inherit;
+      color: var(--code-fg);
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    /* token colors */
+    .tok-kw  { color: #bb9af7; }         /* keyword */
+    .tok-str { color: var(--code-green); }/* string literal */
+    .tok-inj { color: var(--code-red); background: rgba(247,118,142,0.12); border-radius: 2px; padding: 0 2px; }
+    .tok-cmt { color: #565f89; font-style: italic; }
+    .tok-ph  { color: var(--code-yellow); } /* placeholder ? */
+
+    /* ── LOGIN BUTTON ────────────────────────────────────────────── */
+    .btn-login {
+      width: 100%;
+      padding: 10px;
+      border-radius: var(--radius);
+      border: none;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-login.vuln {
+      background: var(--danger);
+      color: #fff;
+    }
+    .btn-login.vuln:hover { background: #dc2626; }
+    .btn-login.safe {
+      background: var(--accent);
+      color: #fff;
+    }
+    .btn-login.safe:hover { background: #059669; }
+
+    /* ── RESULT PANEL ────────────────────────────────────────────── */
+    .result-panel {
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      font-size: 0.85rem;
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .result-panel.show { display: flex; }
+    .result-panel.denied {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #991b1b;
+    }
+    .result-panel.granted {
+      background: #f0fdf4;
+      border: 1px solid #86efac;
+    }
+    .result-panel .res-headline {
+      font-weight: 700;
+      font-size: 0.95rem;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .result-panel.granted .res-headline { color: #15803d; }
+    .result-panel .res-warn {
+      font-size: 0.8rem;
+      color: #92400e;
+      background: #fef3c7;
+      border: 1px solid #fde68a;
+      border-radius: 7px;
+      padding: 7px 10px;
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+    }
+    .result-panel .db-row {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.76rem;
+      background: var(--code-bg);
+      color: var(--code-green);
+      border-radius: 7px;
+      padding: 10px 12px;
+      line-height: 1.65;
+    }
+    .result-panel .injected-query {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.74rem;
+      background: var(--code-bg);
+      border-radius: 7px;
+      padding: 10px 12px;
+      line-height: 1.65;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    /* ── SAFE COLUMN NOTE ────────────────────────────────────────── */
+    .param-note {
+      border-radius: var(--radius);
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      padding: 12px 14px;
+      font-size: 0.82rem;
+      color: #1e40af;
+      line-height: 1.55;
+    }
+    .param-note strong { font-weight: 700; }
+
+    /* ── DROP TABLE OVERLAY ──────────────────────────────────────── */
+    .drop-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(15, 10, 10, 0.88);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      z-index: 10;
+      border-radius: 16px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+    .drop-overlay.show {
+      opacity: 1;
+      pointer-events: all;
+    }
+    .drop-overlay .drop-icon {
+      font-size: 4rem;
+      animation: shake 0.5s ease infinite alternate;
+    }
+    @keyframes shake {
+      from { transform: rotate(-6deg) scale(1); }
+      to   { transform: rotate(6deg) scale(1.08); }
+    }
+    .drop-overlay .drop-text {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--code-red);
+      letter-spacing: 0.04em;
+    }
+    .drop-overlay .drop-sub {
+      font-size: 0.85rem;
+      color: #a9b1d6;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .drop-overlay .drop-dismiss {
+      margin-top: 10px;
+      background: transparent;
+      border: 1px solid #565f89;
+      color: #a9b1d6;
+      border-radius: 999px;
+      padding: 6px 18px;
+      font-size: 0.78rem;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      transition: all 0.15s;
+    }
+    .drop-overlay .drop-dismiss:hover { border-color: #a9b1d6; color: #fff; }
+
+    /* ── FOOTER ──────────────────────────────────────────────────── */
+    footer {
+      text-align: center;
+      margin-top: 40px;
+      font-size: 0.78rem;
+      color: var(--ink-soft);
+    }
+    footer a { color: var(--primary); text-decoration: none; }
+
+    /* ── RESPONSIVE ──────────────────────────────────────────────── */
+    @media (max-width: 760px) {
+      .main { grid-template-columns: 1fr; }
+      .page-header { padding: 20px 16px 16px; }
+      .payload-bar { padding: 12px 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── HEADER ──────────────────────────────────────────── -->
+<header class="page-header">
+  <h1><span class="icon">&#x1F480;</span> SQL Injection Lab</h1>
+  <p>See exactly how injection works — and why parameterised queries fix it</p>
+</header>
+
+<!-- ── CHIPS BAR ────────────────────────────────────────── -->
+<div class="payload-bar">
+  <label>Try these injections &rarr;</label>
+  <button class="chip" onclick="injectChip(&quot;admin' --&quot;)">admin' --</button>
+  <button class="chip" onclick="injectChip(&quot;' OR '1'='1&quot;)">' OR '1'='1</button>
+  <button class="chip danger-chip" onclick="injectChip(&quot;'; DROP TABLE users; --&quot;)">'; DROP TABLE users; --</button>
+</div>
+
+<!-- ── TWO-COLUMN LAYOUT ─────────────────────────────────── -->
+<div class="main">
+
+  <!-- LEFT: VULNERABLE ──────────────────────────────────── -->
+  <div class="col-card vulnerable" id="vuln-card">
+
+    <div class="drop-overlay" id="drop-overlay">
+      <div class="drop-icon">&#x1F4A5;</div>
+      <div class="drop-text">TABLES DROPPED</div>
+      <div class="drop-sub">DROP TABLE users executed successfully</div>
+      <div class="drop-sub" style="color:#f7768e; margin-top:4px;">All user data is gone.</div>
+      <button class="drop-dismiss" onclick="dismissDrop()">dismiss</button>
+    </div>
+
+    <div class="col-header">
+      <div class="col-header-left">
+        <span class="col-title">The Vulnerable App</span>
+        <span class="col-subtitle">Login form (<code>string concatenation</code> — vulnerable)</span>
+      </div>
+      <div class="status-badge safe" id="vuln-badge">
+        <span class="status-dot"></span>
+        <span id="vuln-badge-text">SAFE</span>
+      </div>
+    </div>
+
+    <div class="col-body">
+      <div class="field-group">
+        <label for="v-user">Username</label>
+        <input id="v-user" type="text" placeholder="e.g. alice" autocomplete="off" oninput="onVulnInput()" />
+      </div>
+      <div class="field-group">
+        <label for="v-pass">Password</label>
+        <input id="v-pass" type="password" placeholder="••••••••" autocomplete="off" oninput="onVulnInput()" />
+      </div>
+
+      <!-- live query display -->
+      <div class="query-block">
+        <div class="ql">Live SQL query (built by string concat)</div>
+        <code id="vuln-query"></code>
+      </div>
+
+      <button class="btn-login vuln" onclick="vulnLogin()">Login</button>
+
+      <!-- result panel -->
+      <div class="result-panel" id="vuln-result">
+        <!-- filled by JS -->
+      </div>
+    </div>
+  </div><!-- /vuln-card -->
+
+  <!-- RIGHT: SAFE ────────────────────────────────────────── -->
+  <div class="col-card">
+    <div class="col-header">
+      <div class="col-header-left">
+        <span class="col-title">The Safe App</span>
+        <span class="col-subtitle">Same query — <code>parameterised</code> (safe)</span>
+      </div>
+      <div class="status-badge safe" style="white-space:normal; text-align:right; max-width:200px; line-height:1.35;">
+        <span class="status-dot"></span>
+        <span>SAFE — input treated as data, never as SQL</span>
+      </div>
+    </div>
+
+    <div class="col-body">
+      <div class="field-group">
+        <label for="s-user">Username</label>
+        <input id="s-user" type="text" placeholder="e.g. alice" autocomplete="off" />
+      </div>
+      <div class="field-group">
+        <label for="s-pass">Password</label>
+        <input id="s-pass" type="password" placeholder="••••••••" autocomplete="off" />
+      </div>
+
+      <!-- static parameterised query -->
+      <div class="query-block">
+        <div class="ql">Parameterised query (never changes)</div>
+        <code><span class="tok-kw">SELECT</span> * <span class="tok-kw">FROM</span> users
+  <span class="tok-kw">WHERE</span> username=<span class="tok-ph">?</span>
+    <span class="tok-kw">AND</span> password=<span class="tok-ph">?</span></code>
+      </div>
+
+      <button class="btn-login safe" onclick="safeLogin()">Login</button>
+
+      <div class="result-panel denied show" id="safe-result">
+        <div class="res-headline">&#x274C; Access denied — invalid credentials</div>
+      </div>
+
+      <div class="param-note">
+        The <strong><code>?</code> placeholder</strong> tells the database: treat this value as a
+        literal string, not SQL syntax. No matter what the user types, it cannot escape the
+        quote boundary — the DB engine handles escaping before the query is parsed.
+      </div>
+    </div>
+  </div><!-- /safe-card -->
+
+</div><!-- /main -->
+
+<footer>
+  Part of the <strong>How Hackers Think</strong> workshop &middot; Educational use only
+</footer>
+
+<script>
+/* ================================================================
+   INJECTION DETECTION
+   ================================================================ */
+const INJECTION_PATTERNS = [
+  /'/,                          // any single quote
+  /--/,                         // SQL comment
+  /;\s*/,                       // semicolon
+  /\bOR\b/i,                    // OR keyword
+  /\bDROP\b/i,                  // DROP
+  /\bSELECT\b/i,                // SELECT
+  /\bINSERT\b/i,
+  /\bDELETE\b/i,
+  /\bUNION\b/i,
+  /\/\*/                        // block comment
+];
+
+function isInjection(val) {
+  return INJECTION_PATTERNS.some(p => p.test(val));
+}
+
+/* ================================================================
+   BUILD HIGHLIGHTED QUERY HTML (vulnerable path)
+   ================================================================ */
+function buildQueryHTML(user, pass) {
+  // We colour-code: keyword in purple, safe string values in green,
+  // injected portions in red.
+  const kw = s => `<span class="tok-kw">${s}</span>`;
+
+  function colorValue(raw) {
+    if (!raw) return `<span class="tok-str">''</span>`;
+    if (isInjection(raw)) {
+      // Split on SQL-significant tokens and highlight them red
+      return highlightInjected(raw);
+    }
+    return `<span class="tok-str">'${esc(raw)}'</span>`;
+  }
+
+  function highlightInjected(raw) {
+    // Tokenise: find SQL metacharacters and keywords
+    const parts = [];
+    let i = 0;
+    const text = raw;
+    // We'll do a simple character-by-character scan
+    let buf = '';
+    while (i < text.length) {
+      // Check for -- comment
+      if (text[i] === '-' && text[i+1] === '-') {
+        if (buf) { parts.push({ t:'normal', v: buf }); buf=''; }
+        let cmt = '--';
+        i += 2;
+        while (i < text.length) { cmt += text[i++]; }
+        parts.push({ t:'comment', v: cmt });
+        break;
+      }
+      // Check for semicolon
+      if (text[i] === ';') {
+        if (buf) { parts.push({ t:'normal', v: buf }); buf=''; }
+        parts.push({ t:'inj', v: ';' });
+        i++;
+        continue;
+      }
+      // Check for single quote
+      if (text[i] === "'") {
+        if (buf) { parts.push({ t:'normal', v: buf }); buf=''; }
+        parts.push({ t:'inj', v: "'" });
+        i++;
+        continue;
+      }
+      buf += text[i++];
+    }
+    if (buf) parts.push({ t:'normal', v: buf });
+
+    // Now render, also keyword-detecting within normal segments
+    return parts.map(p => {
+      if (p.t === 'comment') return `<span class="tok-cmt">${esc(p.v)}</span>`;
+      if (p.t === 'inj') return `<span class="tok-inj">${esc(p.v)}</span>`;
+      // normal — detect SQL keywords within
+      return renderNormalWithKeywords(p.v);
+    }).join('');
+  }
+
+  function renderNormalWithKeywords(str) {
+    const keywords = /\b(OR|AND|SELECT|FROM|WHERE|DROP|TABLE|INSERT|DELETE|UNION)\b/gi;
+    return esc(str).replace(keywords, m => `<span class="tok-inj">${m}</span>`);
+  }
+
+  const userHTML  = colorValue(user);
+  const passHTML  = colorValue(pass);
+
+  return `${kw('SELECT')} * ${kw('FROM')} users\n  ${kw('WHERE')} username=${userHTML}\n    ${kw('AND')} password=${passHTML}`;
+}
+
+function esc(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+/* ================================================================
+   VULNERABLE FORM — LIVE UPDATE
+   ================================================================ */
+function onVulnInput() {
+  const user = document.getElementById('v-user').value;
+  const pass = document.getElementById('v-pass').value;
+  const injecting = isInjection(user) || isInjection(pass);
+
+  // Update query display
+  document.getElementById('vuln-query').innerHTML = buildQueryHTML(user, pass);
+
+  // Update card state
+  const card  = document.getElementById('vuln-card');
+  const badge = document.getElementById('vuln-badge');
+  const btext = document.getElementById('vuln-badge-text');
+  const uInput = document.getElementById('v-user');
+  const pInput = document.getElementById('v-pass');
+
+  if (injecting) {
+    card.classList.add('injecting');
+    badge.classList.remove('safe');
+    badge.classList.add('danger');
+    btext.textContent = 'INJECTION DETECTED';
+    if (isInjection(user)) uInput.classList.add('injected'); else uInput.classList.remove('injected');
+    if (isInjection(pass)) pInput.classList.add('injected'); else pInput.classList.remove('injected');
+  } else {
+    card.classList.remove('injecting');
+    badge.classList.add('safe');
+    badge.classList.remove('danger');
+    btext.textContent = 'SAFE';
+    uInput.classList.remove('injected');
+    pInput.classList.remove('injected');
+  }
+
+  // Hide result panel on input change
+  const rp = document.getElementById('vuln-result');
+  rp.classList.remove('show');
+}
+
+/* ================================================================
+   VULNERABLE LOGIN CLICK
+   ================================================================ */
+function vulnLogin() {
+  const user = document.getElementById('v-user').value;
+  const pass = document.getElementById('v-pass').value;
+  const rp   = document.getElementById('vuln-result');
+  const injecting = isInjection(user) || isInjection(pass);
+
+  rp.innerHTML = '';
+  rp.className = 'result-panel';
+
+  if (injecting) {
+    rp.classList.add('granted', 'show');
+
+    // Which kind of injection?
+    const isDropTable = /DROP\s+TABLE/i.test(user + pass);
+
+    rp.innerHTML = `
+      <div class="res-headline">&#x2705; ACCESS GRANTED as admin</div>
+      <div class="res-warn">
+        &#x26A0;&#xFE0F;&nbsp;Attacker is now logged in as administrator
+      </div>
+      <div class="db-row">Returned row:<br>{ id: 1, username: <span style="color:var(--code-yellow)">'admin'</span>, email: <span style="color:var(--code-yellow)">'admin@corp.com'</span>, role: <span style="color:var(--code-red)">'superuser'</span> }</div>
+      <div style="font-size:0.72rem;color:#565f89;margin-top:2px;font-family:'JetBrains Mono',monospace;">Dangerous query that ran:</div>
+      <div class="injected-query">${buildQueryHTML(user, pass)}</div>`;
+
+    if (isDropTable) {
+      showDropOverlay();
+    }
+  } else {
+    rp.classList.add('denied', 'show');
+    rp.innerHTML = `<div class="res-headline">&#x274C; Access denied — invalid credentials</div>`;
+  }
+}
+
+/* ================================================================
+   SAFE LOGIN CLICK
+   ================================================================ */
+function safeLogin() {
+  const rp = document.getElementById('safe-result');
+  rp.innerHTML = `<div class="res-headline">&#x274C; Access denied — invalid credentials</div>`;
+  rp.className = 'result-panel denied show';
+  // brief green flash to reinforce "it still blocked it"
+  rp.style.transition = 'none';
+  rp.style.background = '#f0fdf4';
+  rp.style.borderColor = '#86efac';
+  setTimeout(() => {
+    rp.style.background = '';
+    rp.style.borderColor = '';
+    rp.style.transition = '';
+    rp.className = 'result-panel denied show';
+  }, 700);
+}
+
+/* ================================================================
+   DROP TABLE OVERLAY
+   ================================================================ */
+function showDropOverlay() {
+  document.getElementById('drop-overlay').classList.add('show');
+}
+function dismissDrop() {
+  document.getElementById('drop-overlay').classList.remove('show');
+}
+
+/* ================================================================
+   CHIP INJECTION
+   ================================================================ */
+function injectChip(payload) {
+  const uInput = document.getElementById('v-user');
+  uInput.value = payload;
+  // Also clear password for clarity
+  document.getElementById('v-pass').value = '';
+  onVulnInput();
+  uInput.focus();
+
+  // Auto-trigger login so students see the result immediately
+  vulnLogin();
+
+  // Scroll vulnerable card into view on mobile
+  document.getElementById('vuln-card').scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
+/* ================================================================
+   INIT — render empty query on load
+   ================================================================ */
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('vuln-query').innerHTML = buildQueryHTML('', '');
+});
+</script>
+</body>
+</html>

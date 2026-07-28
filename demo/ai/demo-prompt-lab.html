@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prompt Lab — How LLMs Work Workshop</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary: #4f46e5;
+    --secondary: #8b5cf6;
+    --accent: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --surface: #fff;
+    --ink: #16181f;
+    --ink-soft: #454a58;
+    --border: #e8e9f2;
+    --surface-2: #f7f7fb;
+    --code-bg: #1a1b26;
+    --code-text: #a9b1d6;
+    --radius: 10px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--surface-2);
+    color: var(--ink);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Header ── */
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 18px 32px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+
+  .header-icon {
+    font-size: 28px;
+    line-height: 1;
+  }
+
+  .header-text h1 {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.3px;
+  }
+
+  .header-text p {
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin-top: 2px;
+  }
+
+  /* ── Main layout ── */
+  main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 24px 32px;
+    max-width: 1400px;
+    width: 100%;
+    margin: 0 auto;
+  }
+
+  .panels {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+
+  @media (max-width: 900px) {
+    .panels { grid-template-columns: 1fr; }
+    main { padding: 16px; }
+    header { padding: 16px; }
+  }
+
+  /* ── Card ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .card-header {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .card-header h2 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink);
+    flex: 1;
+  }
+
+  .card-body { padding: 18px; }
+
+  /* ── Technique tabs ── */
+  .technique-tabs {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+
+  .tab-btn {
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 7px 14px;
+    border-radius: 6px;
+    border: 1.5px solid var(--border);
+    background: var(--surface-2);
+    color: var(--ink-soft);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    letter-spacing: 0.1px;
+  }
+
+  .tab-btn:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+    background: #f0f0fe;
+  }
+
+  .tab-btn.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(79,70,229,0.25);
+  }
+
+  /* ── Task input ── */
+  .task-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+  }
+
+  .task-textarea {
+    width: 100%;
+    min-height: 90px;
+    padding: 12px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    color: var(--ink);
+    background: var(--surface);
+    resize: vertical;
+    transition: border-color 0.15s;
+    line-height: 1.5;
+  }
+
+  .task-textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(79,70,229,0.1);
+  }
+
+  /* ── Quick chips ── */
+  .chips-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 14px;
+    margin-bottom: 8px;
+  }
+
+  .chips {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .chip {
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 7px 12px;
+    border-radius: 6px;
+    border: 1.5px solid var(--border);
+    background: var(--surface-2);
+    color: var(--ink-soft);
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.15s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .chip:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: #f0fdf8;
+  }
+
+  .chip-icon {
+    margin-right: 5px;
+    opacity: 0.7;
+  }
+
+  /* ── Code panel ── */
+  .code-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .code-card-header {
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .code-card-header h2 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  .msg-badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 20px;
+    background: var(--surface-2);
+    color: var(--ink-soft);
+    border: 1px solid var(--border);
+    transition: all 0.2s;
+  }
+
+  .msg-badge.updated {
+    background: #ecfdf5;
+    color: var(--accent);
+    border-color: #a7f3d0;
+  }
+
+  /* ── Code block ── */
+  .code-wrap {
+    background: var(--code-bg);
+    padding: 20px;
+    overflow-x: auto;
+    min-height: 320px;
+    position: relative;
+  }
+
+  pre.code-output {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--code-text);
+    white-space: pre;
+    transition: opacity 0.15s;
+  }
+
+  pre.code-output.flash {
+    animation: flashAnim 0.4s ease;
+  }
+
+  @keyframes flashAnim {
+    0%   { opacity: 0.3; }
+    50%  { opacity: 1; }
+    100% { opacity: 1; }
+  }
+
+  /* Syntax colors */
+  .tok-key    { color: #7dcfff; }   /* JSON keys — blue */
+  .tok-str    { color: #9ece6a; }   /* string values — green */
+  .tok-role   { color: #e0af68; }   /* role values — yellow */
+  .tok-brace  { color: #c0caf5; }   /* brackets — lavender */
+  .tok-comma  { color: #565f89; }   /* commas — muted */
+  .tok-colon  { color: #565f89; }   /* colons — muted */
+
+  /* ── Token counter ── */
+  .token-bar {
+    padding: 10px 18px;
+    background: #13141f;
+    border-top: 1px solid #2a2c3e;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .token-pill {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    color: #565f89;
+  }
+
+  .token-pill span {
+    color: var(--warning);
+    font-weight: 700;
+  }
+
+  .token-dot {
+    color: #2a2c3e;
+    font-size: 14px;
+  }
+
+  .cost-pill {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: #565f89;
+  }
+
+  .cost-pill span {
+    color: #9ece6a;
+    font-weight: 600;
+  }
+
+  /* ── Technique badge below array ── */
+  .technique-meta {
+    padding: 10px 18px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--ink-soft);
+    background: var(--surface-2);
+  }
+
+  .technique-meta .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex-shrink: 0;
+  }
+
+  /* ── Explanation card ── */
+  .explain-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .explain-header {
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #f8f7ff;
+  }
+
+  .explain-header h3 {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--primary);
+  }
+
+  .explain-body {
+    padding: 16px 18px;
+    font-size: 14px;
+    color: var(--ink-soft);
+    line-height: 1.65;
+  }
+
+  .explain-body strong {
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  /* ── Technique grid for explanations ── */
+  .explain-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+    margin-top: 8px;
+  }
+
+  .explain-item {
+    padding: 12px 14px;
+    border-radius: 8px;
+    border: 1.5px solid var(--border);
+    transition: all 0.2s;
+  }
+
+  .explain-item.active {
+    border-color: var(--primary);
+    background: #f8f7ff;
+    box-shadow: 0 2px 8px rgba(79,70,229,0.1);
+  }
+
+  .explain-item-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--primary);
+    margin-bottom: 5px;
+  }
+
+  .explain-item:not(.active) .explain-item-label {
+    color: var(--ink-soft);
+  }
+
+  .explain-item p {
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    line-height: 1.55;
+  }
+
+  .explain-item.active p {
+    color: var(--ink);
+  }
+
+  /* ── Footer ── */
+  footer {
+    text-align: center;
+    padding: 14px;
+    font-size: 11.5px;
+    color: var(--ink-soft);
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-icon">⚗️</div>
+  <div class="header-text">
+    <h1>Prompt Lab</h1>
+    <p>See how prompting techniques change the messages array sent to the model</p>
+  </div>
+</header>
+
+<main>
+  <div class="panels">
+
+    <!-- LEFT: Your Task -->
+    <div class="card">
+      <div class="card-header">
+        <span>📝</span>
+        <h2>Your Task</h2>
+      </div>
+      <div class="card-body">
+
+        <div class="technique-tabs" id="tabs">
+          <button class="tab-btn active" data-tech="zero-shot">Zero-Shot</button>
+          <button class="tab-btn" data-tech="few-shot">Few-Shot</button>
+          <button class="tab-btn" data-tech="chain-of-thought">Chain-of-Thought</button>
+          <button class="tab-btn" data-tech="role-based">Role-Based</button>
+        </div>
+
+        <div class="task-label">What task do you want the model to do?</div>
+        <textarea
+          class="task-textarea"
+          id="taskInput"
+          spellcheck="false"
+        >Classify this review as Positive, Negative, or Neutral: 'The battery life is amazing but the camera is disappointing'</textarea>
+
+        <div class="chips-label">Quick tasks</div>
+        <div class="chips" id="chips"></div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Messages Array -->
+    <div class="code-card">
+      <div class="code-card-header">
+        <h2>The Messages Array</h2>
+        <div class="msg-badge" id="msgBadge">2 messages</div>
+      </div>
+      <div class="code-wrap">
+        <pre class="code-output" id="codeOutput"></pre>
+      </div>
+      <div class="technique-meta">
+        <div class="dot"></div>
+        <span id="techMeta"></span>
+      </div>
+      <div class="token-bar">
+        <div class="token-pill">~<span id="tokenCount">0</span> tokens</div>
+        <div class="token-dot">·</div>
+        <div class="cost-pill">~<span id="costPer1k">$0.00</span> per 1,000 calls at gpt-4o-mini rates ($0.15/1M input)</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Explanation card -->
+  <div class="explain-card">
+    <div class="explain-header">
+      <span>💡</span>
+      <h3>What changed?</h3>
+    </div>
+    <div class="explain-body">
+      <div class="explain-grid" id="explainGrid"></div>
+    </div>
+  </div>
+</main>
+
+<footer>Part of the <strong>How LLMs Work</strong> workshop &nbsp;·&nbsp; Educational use only</footer>
+
+<script>
+// ── Data ──────────────────────────────────────────────────────────────────────
+
+const QUICK_TASKS = [
+  { icon: "🌡️", text: "Summarise this in one sentence: Climate change refers to long-term shifts in global temperatures and weather patterns. While natural factors have always influenced climate, since the Industrial Revolution, human activities—especially the burning of fossil fuels—have become the dominant driver of climate change." },
+  { icon: "🐍", text: "Write a Python function that reverses a string" },
+  { icon: "🔢", text: "Is 17 a prime number? Show your work" },
+  { icon: "🌍", text: "Translate 'Good morning' to 5 languages" },
+];
+
+const TECH_META = {
+  "zero-shot":        "2 messages · Simplest form — just ask directly",
+  "few-shot":         "6 messages · Examples teach the pattern — format, style, edge cases",
+  "chain-of-thought": "2 messages · 'Think step by step' unlocks reasoning — especially for math and logic",
+  "role-based":       "2 messages · The system prompt shapes persona, depth, and vocabulary",
+};
+
+const EXPLANATIONS = {
+  "zero-shot":        { label: "Zero-Shot",        text: "No examples, no instructions beyond the task. Good for simple tasks the model already knows well. Unreliable for edge cases or specific formats." },
+  "few-shot":         { label: "Few-Shot",          text: "Showing examples is the single most reliable way to control output format. The model learns the pattern from your examples, not from instructions." },
+  "chain-of-thought": { label: "Chain-of-Thought",  text: "Adding 'step by step' doesn't change the messages structure much — but it triggers a different internal reasoning mode. Dramatically improves accuracy on multi-step problems." },
+  "role-based":       { label: "Role-Based",        text: "The system message is the most powerful lever you have. It sets tone, expertise level, response style, and constraints for the entire conversation." },
+};
+
+const TECH_ORDER = ["zero-shot", "few-shot", "chain-of-thought", "role-based"];
+
+// ── State ─────────────────────────────────────────────────────────────────────
+
+let currentTech = "zero-shot";
+let currentTask = document.getElementById("taskInput").value;
+
+// ── Build messages array for each technique ───────────────────────────────────
+
+function buildMessages(tech, task) {
+  switch (tech) {
+    case "zero-shot":
+      return [
+        { role: "system",    content: "You are a helpful assistant." },
+        { role: "user",      content: task },
+      ];
+
+    case "few-shot":
+      return [
+        { role: "system",    content: "You are a helpful assistant." },
+        { role: "user",      content: "Classify: 'Absolutely loved it!' → ?" },
+        { role: "assistant", content: "Positive" },
+        { role: "user",      content: "Classify: 'Total waste of money' → ?" },
+        { role: "assistant", content: "Negative" },
+        { role: "user",      content: task },
+      ];
+
+    case "chain-of-thought":
+      return [
+        { role: "system",    content: "You are a helpful assistant. Think through problems step by step before giving your final answer." },
+        { role: "user",      content: task + "\n\nLet's think through this step by step:" },
+      ];
+
+    case "role-based":
+      return [
+        { role: "system",    content: "You are an expert sentiment analyst with 10 years of experience in consumer product reviews. You are precise, consistent, and always explain your reasoning briefly." },
+        { role: "user",      content: task },
+      ];
+  }
+}
+
+// ── Syntax highlighting ───────────────────────────────────────────────────────
+
+function escHtml(s) {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+const ROLE_VALUES = new Set(["system", "user", "assistant"]);
+
+function highlightJson(messages) {
+  const lines = JSON.stringify(messages, null, 2).split("\n");
+  return lines.map(line => {
+    // Match "key": value
+    // Strategy: tokenise carefully without a full parser
+
+    // Line is purely a bracket / punctuation
+    if (/^\s*[\[\]{}],?\s*$/.test(line)) {
+      const indent = line.match(/^(\s*)/)[1];
+      const rest = line.trim();
+      return indent + `<span class="tok-brace">${escHtml(rest)}</span>`;
+    }
+
+    // key: value line
+    const kvMatch = line.match(/^(\s*)("([^"]*)")\s*:\s*([\s\S]*)$/);
+    if (kvMatch) {
+      const indent = kvMatch[1];
+      const key    = kvMatch[2];           // "role" or "content"
+      const keyInner = kvMatch[3];         // role | content
+      const rest   = kvMatch[4].trimEnd(); // value part including trailing comma
+
+      // Determine if there's a trailing comma
+      const trailingComma = rest.endsWith(",") ? "," : "";
+      const valueRaw = trailingComma ? rest.slice(0, -1) : rest;
+
+      let valueHtml;
+
+      // String value (quoted)
+      const strMatch = valueRaw.match(/^"([\s\S]*)"$/);
+      if (strMatch) {
+        const inner = strMatch[1];
+        if (keyInner === "role" && ROLE_VALUES.has(inner)) {
+          valueHtml = `<span class="tok-role">"${escHtml(inner)}"</span>`;
+        } else {
+          // Content: show with escaped newlines rendered nicely
+          valueHtml = `<span class="tok-str">"${escHtml(inner)}"</span>`;
+        }
+      } else {
+        valueHtml = `<span class="tok-str">${escHtml(valueRaw)}</span>`;
+      }
+
+      return (
+        indent +
+        `<span class="tok-key">"${escHtml(keyInner)}"</span>` +
+        `<span class="tok-colon">: </span>` +
+        valueHtml +
+        (trailingComma ? `<span class="tok-comma">,</span>` : "")
+      );
+    }
+
+    // Fallback: plain
+    return escHtml(line);
+  }).join("\n");
+}
+
+// ── Token estimation ──────────────────────────────────────────────────────────
+
+function estimateTokens(messages) {
+  const raw = JSON.stringify(messages);
+  return Math.round(raw.length / 4);
+}
+
+function formatCost(tokens) {
+  // $0.15 per 1M input tokens = $0.00000015 per token
+  const costPer1k = (tokens / 1_000_000) * 0.15 * 1000;
+  return "$" + costPer1k.toFixed(4);
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+
+function render(flash = true) {
+  const messages = buildMessages(currentTech, currentTask);
+
+  // Code block
+  const codeEl = document.getElementById("codeOutput");
+  codeEl.innerHTML = highlightJson(messages);
+  if (flash) {
+    codeEl.classList.remove("flash");
+    void codeEl.offsetWidth; // reflow
+    codeEl.classList.add("flash");
+  }
+
+  // Badge
+  const badgeEl = document.getElementById("msgBadge");
+  badgeEl.textContent = `${messages.length} message${messages.length !== 1 ? "s" : ""}`;
+  badgeEl.classList.add("updated");
+  clearTimeout(badgeEl._timer);
+  badgeEl._timer = setTimeout(() => badgeEl.classList.remove("updated"), 800);
+
+  // Tech meta
+  document.getElementById("techMeta").textContent = TECH_META[currentTech];
+
+  // Tokens
+  const tokens = estimateTokens(messages);
+  document.getElementById("tokenCount").textContent = "~" + tokens.toLocaleString();
+  document.getElementById("costPer1k").textContent = formatCost(tokens);
+
+  // Explanations
+  const grid = document.getElementById("explainGrid");
+  grid.innerHTML = "";
+  TECH_ORDER.forEach(tech => {
+    const { label, text } = EXPLANATIONS[tech];
+    const item = document.createElement("div");
+    item.className = "explain-item" + (tech === currentTech ? " active" : "");
+    item.innerHTML = `<div class="explain-item-label">${label}</div><p>${text}</p>`;
+    item.style.cursor = "pointer";
+    item.addEventListener("click", () => {
+      currentTech = tech;
+      setActiveTabs();
+      render();
+    });
+    grid.appendChild(item);
+  });
+}
+
+// ── Tabs ──────────────────────────────────────────────────────────────────────
+
+function setActiveTabs() {
+  document.querySelectorAll(".tab-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.tech === currentTech);
+  });
+}
+
+document.getElementById("tabs").addEventListener("click", e => {
+  const btn = e.target.closest(".tab-btn");
+  if (!btn) return;
+  currentTech = btn.dataset.tech;
+  setActiveTabs();
+  render();
+});
+
+// ── Task input ────────────────────────────────────────────────────────────────
+
+const taskInput = document.getElementById("taskInput");
+taskInput.addEventListener("input", () => {
+  currentTask = taskInput.value;
+  render(true);
+});
+
+// ── Chips ─────────────────────────────────────────────────────────────────────
+
+const chipsEl = document.getElementById("chips");
+QUICK_TASKS.forEach(({ icon, text }) => {
+  const btn = document.createElement("button");
+  btn.className = "chip";
+  btn.innerHTML = `<span class="chip-icon">${icon}</span>${text.length > 72 ? text.slice(0, 72) + "…" : text}`;
+  btn.title = text;
+  btn.addEventListener("click", () => {
+    taskInput.value = text;
+    currentTask = text;
+    render(true);
+  });
+  chipsEl.appendChild(btn);
+});
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+
+render(false);
+</script>
+</body>
+</html>
