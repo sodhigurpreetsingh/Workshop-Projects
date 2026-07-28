@@ -14,19 +14,49 @@
         <h2 class="pin-title">CU Admin Dashboard</h2>
         <p class="pin-subtitle">Enter your admin PIN to continue</p>
         <form @submit.prevent="checkPin" class="pin-form">
-          <input
-            v-model="pinInput"
-            type="password"
-            class="pin-input"
-            placeholder="Enter PIN"
-            autocomplete="off"
-            ref="pinInputRef"
-          />
+          <div class="pin-input-wrap">
+            <input
+              v-model="pinInput"
+              :type="pinVisible ? 'text' : 'password'"
+              class="pin-input"
+              placeholder="Enter PIN"
+              autocomplete="off"
+              ref="pinInputRef"
+            />
+            <button type="button" class="pin-eye" @click="pinVisible = !pinVisible" tabindex="-1">
+              <svg v-if="!pinVisible" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+              </svg>
+              <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>
+              </svg>
+            </button>
+          </div>
           <button type="submit" class="pin-btn">Enter</button>
         </form>
         <p v-if="pinError" class="pin-error">{{ pinError }}</p>
       </div>
     </div>
+
+    <!-- ===================== Document Content Dialog ===================== -->
+    <transition name="dialog-fade">
+      <div v-if="docDialog.show" class="dialog-overlay" @click.self="closeDocDialog">
+        <div class="dialog-box">
+          <div class="dialog-header">
+            <div>
+              <h3 class="dialog-title">{{ docDialog.title }}</h3>
+              <span class="badge" style="margin-top:4px;display:inline-block">{{ docDialog.category }}</span>
+              <span class="dialog-meta">{{ docDialog.chunkCount }} chunk{{ docDialog.chunkCount !== 1 ? 's' : '' }}</span>
+            </div>
+            <button class="dialog-close" @click="closeDocDialog">✕</button>
+          </div>
+          <div class="dialog-body">
+            <div v-if="docDialog.loading" class="loading-state">Loading content...</div>
+            <pre v-else class="doc-content">{{ docDialog.content }}</pre>
+          </div>
+        </div>
+      </div>
+    </transition>
 
     <!-- ===================== Main Dashboard ===================== -->
     <template v-if="authenticated">
@@ -154,7 +184,9 @@
                   </thead>
                   <tbody>
                     <tr v-for="doc in documents" :key="doc.doc_id">
-                      <td class="col-title">{{ doc.title }}</td>
+                      <td class="col-title">
+                        <button class="title-link" @click="openDocDialog(doc)">{{ doc.title }}</button>
+                      </td>
                       <td class="col-category">
                         <span class="badge">{{ doc.category || 'General' }}</span>
                       </td>
@@ -193,7 +225,8 @@ export default {
   setup() {
     // ======== Auth ========
     const authenticated = ref(false);
-    const pinInput = ref('');
+    const pinInput = ref(ADMIN_PIN);
+    const pinVisible = ref(false);
     const pinError = ref('');
     const pinInputRef = ref(null);
 
@@ -298,6 +331,38 @@ export default {
       }
     };
 
+    // ======== Document Content Dialog ========
+    const docDialog = reactive({
+      show: false,
+      loading: false,
+      doc_id: '',
+      title: '',
+      category: '',
+      chunkCount: 0,
+      content: '',
+    });
+
+    const openDocDialog = async (doc) => {
+      docDialog.show = true;
+      docDialog.loading = true;
+      docDialog.title = doc.title;
+      docDialog.category = doc.category || 'general';
+      docDialog.chunkCount = doc.chunk_count ?? doc.chunks ?? 0;
+      docDialog.content = '';
+      docDialog.doc_id = doc.doc_id;
+      try {
+        const res = await myAxios.get(`/admin/documents/${doc.doc_id}`, { headers: ADMIN_HEADER });
+        docDialog.content = res.data?.content ?? '';
+        docDialog.chunkCount = res.data?.chunk_count ?? docDialog.chunkCount;
+      } catch (e) {
+        docDialog.content = 'Failed to load document content.';
+      } finally {
+        docDialog.loading = false;
+      }
+    };
+
+    const closeDocDialog = () => { docDialog.show = false; };
+
     // ======== Add Document ========
     const addForm = reactive({ title: '', category: '', content: '' });
     const adding = ref(false);
@@ -332,11 +397,12 @@ export default {
     };
 
     return {
-      authenticated, pinInput, pinError, pinInputRef, checkPin, logout,
+      authenticated, pinInput, pinVisible, pinError, pinInputRef, checkPin, logout,
       toast,
       status, lastUpdated,
       documents, loadingDocs, deletingId, fetchDocuments, deleteDocument,
       reloading, reloadFromFiles,
+      docDialog, openDocDialog, closeDocDialog,
       addForm, adding, addDocument,
     };
   },
@@ -790,6 +856,137 @@ export default {
   font-size: 11.5px;
   font-weight: 600;
 }
+
+/* ============================================================
+   PIN eye toggle
+   ============================================================ */
+.pin-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.pin-input-wrap .pin-input {
+  width: 100%;
+  padding-right: 44px;
+  box-sizing: border-box;
+}
+.pin-eye {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  color: var(--ink-soft);
+  display: flex;
+  align-items: center;
+  height: 20px;
+  width: 20px;
+}
+.pin-eye svg {
+  width: 18px;
+  height: 18px;
+}
+.pin-eye:hover { color: var(--maroon); }
+
+/* ============================================================
+   Clickable title
+   ============================================================ */
+.title-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  color: var(--maroon);
+  cursor: pointer;
+  text-align: left;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  transition: text-decoration-color 0.15s;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
+}
+.title-link:hover { text-decoration-color: var(--maroon); }
+
+/* ============================================================
+   Document content dialog
+   ============================================================ */
+.dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 900;
+  padding: 24px;
+}
+.dialog-box {
+  background: white;
+  border-radius: 14px;
+  width: 100%;
+  max-width: 680px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.25);
+  overflow: hidden;
+}
+.dialog-header {
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-shrink: 0;
+  background: var(--surface);
+}
+.dialog-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0 0 4px;
+}
+.dialog-meta {
+  font-size: 12px;
+  color: var(--ink-soft);
+  margin-left: 8px;
+}
+.dialog-close {
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: var(--ink-soft);
+  cursor: pointer;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+.dialog-close:hover { background: var(--border); color: var(--ink); }
+.dialog-body {
+  padding: 20px 22px;
+  overflow-y: auto;
+  flex: 1;
+}
+.doc-content {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--ink);
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0;
+}
+.dialog-fade-enter-active,
+.dialog-fade-leave-active { transition: opacity 0.2s ease; }
+.dialog-fade-enter-from,
+.dialog-fade-leave-to { opacity: 0; }
 
 /* ============================================================
    Responsive

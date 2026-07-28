@@ -577,6 +577,42 @@ class ChatService:
             logger.error(f"Error deleting document '{doc_id}': {e}")
             raise
 
+    def get_document_content(self, doc_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Return the full content of a document by joining its chunks in order.
+
+        Returns:
+            Dict with doc_id, title, category, chunk_count, content  — or None if not found.
+        """
+        try:
+            results = self.collection.get(where={"doc_id": doc_id})
+            if not results or not results.get("ids"):
+                return None
+
+            metadatas = results.get("metadatas", [])
+            documents = results.get("documents", [])
+
+            # Sort chunks by chunk_index so content reads in order
+            paired = sorted(
+                zip(metadatas, documents),
+                key=lambda x: x[0].get("chunk_index", 0),
+            )
+
+            content = "\n".join(doc for _, doc in paired)
+            meta = paired[0][0] if paired else {}
+
+            return {
+                "doc_id": doc_id,
+                "title": meta.get("title", doc_id),
+                "category": meta.get("category", ""),
+                "chunk_count": len(paired),
+                "content": content,
+            }
+
+        except Exception as e:
+            logger.error(f"Error fetching document content for '{doc_id}': {e}")
+            raise
+
     def list_documents(self) -> List[Dict[str, Any]]:
         """
         Return unique documents in the ChromaDB collection.

@@ -115,6 +115,28 @@ async def delete_document(
     return result
 
 
+@router.get("/documents/{doc_id}", summary="Get content of a specific document")
+async def get_document_content(
+    doc_id: str,
+    x_admin_pin: Optional[str] = Header(default=None, alias="X-Admin-Pin"),
+):
+    """
+    Return all text chunks for a given doc_id, joined into a single content string.
+    Also returns title, category, and chunk_count.
+
+    Requires header: X-Admin-Pin: 2025cu
+    """
+    _verify_pin(x_admin_pin)
+
+    result = chat_service.get_document_content(doc_id=doc_id)
+    if not result:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Document '{doc_id}' not found.",
+        )
+    return result
+
+
 @router.get("/documents", summary="List all documents in the knowledge base")
 async def list_documents(
     x_admin_pin: Optional[str] = Header(default=None, alias="X-Admin-Pin"),
