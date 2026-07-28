@@ -99,15 +99,15 @@
                   <label>Category</label>
                   <select v-model="addForm.category" :disabled="adding" required>
                     <option value="">Select a category</option>
-                    <option value="Admissions">Admissions</option>
-                    <option value="Placements">Placements</option>
-                    <option value="Programs">Programs</option>
-                    <option value="Fees">Fees</option>
-                    <option value="Scholarships">Scholarships</option>
-                    <option value="Hostel">Hostel</option>
-                    <option value="Campus Life">Campus Life</option>
-                    <option value="Research">Research</option>
-                    <option value="General">General</option>
+                    <option value="admissions">Admissions</option>
+                    <option value="placements">Placements</option>
+                    <option value="programs">Programs</option>
+                    <option value="fees">Fees</option>
+                    <option value="scholarships">Scholarships</option>
+                    <option value="hostel">Hostel</option>
+                    <option value="campus_life">Campus Life</option>
+                    <option value="research">Research</option>
+                    <option value="general">General</option>
                   </select>
                 </div>
                 <div class="form-field">
