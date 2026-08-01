@@ -361,19 +361,22 @@
     line-height: 1.5;
   }
   .score-breakdown {
-    display: grid;
-    grid-template-columns: repeat(8, 1fr);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
     gap: 6px;
     margin-bottom: 32px;
   }
   .score-dot {
-    width: 100%;
-    aspect-ratio: 1;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.9rem;
+    font-size: 1rem;
+    font-weight: 700;
+    flex-shrink: 0;
   }
   .score-dot.correct { background: #d1fae5; }
   .score-dot.wrong   { background: #fee2e2; }
@@ -426,7 +429,7 @@
 
 <header class="site-header">
   <h1><span class="icon">🔍</span> Phishing URL Detective</h1>
-  <p>Can you spot the fake? 8 rounds — click Real or Fake</p>
+  <p>Can you spot the fake? 14 rounds — click Real or Fake</p>
 </header>
 
 <!-- Progress -->
@@ -495,7 +498,7 @@
   <div class="score-card">
     <div class="score-emoji" id="score-emoji"></div>
     <div class="score-big" id="score-big"></div>
-    <div class="score-label">out of 8</div>
+    <div class="score-label" id="score-label">out of 14</div>
     <div class="score-message" id="score-message"></div>
     <div class="score-breakdown" id="score-breakdown"></div>
     <button class="btn-replay" onclick="restartGame()">↺ Play Again</button>
@@ -508,6 +511,7 @@
 
 <script>
 const ROUNDS = [
+  // 1 — typosquatting classic
   {
     url: "https://paypa1.com/login",
     secure: true,
@@ -515,59 +519,65 @@ const ROUNDS = [
     registrableDomain: "paypa1.com",
     registrableDanger: true,
     why: `<strong>Typosquatting:</strong> The digit <strong>"1"</strong> replaces the letter <strong>"l"</strong> in "paypal" — giving <strong>paypa1.com</strong>. At a glance, especially in certain fonts, these look identical. Attackers register these one-character-off domains and clone the real login page.`,
-    tip: "💡 Tip: Before entering credentials, read the domain letter-by-letter. Look for digits (0, 1) substituted for similar-looking letters (o, l, i).",
+    tip: "Before entering credentials, read the domain letter-by-letter. Look for digits (0, 1) substituted for similar-looking letters (o, l, i).",
     highlightSlice: { text: "paypa1.com", danger: true }
   },
+  // 2 — legitimate URL
   {
     url: "https://www.amazon.com/gp/cart",
     secure: true,
     answer: "real",
     registrableDomain: "amazon.com",
     registrableDanger: false,
-    why: `This is a legitimate Amazon URL. The registrable domain is <strong>amazon.com</strong>, <em>www</em> is just a subdomain, and <em>/gp/cart</em> is Amazon's standard cart path. HTTPS confirms the connection is encrypted.`,
-    tip: "💡 Tip: Identify the registrable domain (the part just before the TLD). Here it's amazon.com — owned by Amazon.",
+    why: `This is a legitimate Amazon URL. The registrable domain is <strong>amazon.com</strong>, <em>www</em> is just a subdomain, and <em>/gp/cart</em> is Amazon's standard cart path.`,
+    tip: "Identify the registrable domain — the part just before the TLD. Here it's amazon.com — owned by Amazon.",
     highlightSlice: { text: "amazon.com", danger: false }
   },
+  // 3 — subdomain spoofing
   {
     url: "https://amazon.com.secure-login.net/account",
     secure: true,
     answer: "fake",
     registrableDomain: "secure-login.net",
     registrableDanger: true,
-    why: `<strong>Subdomain spoofing:</strong> "amazon.com" appears at the start, but it's just a <em>subdomain</em>. The actual registered domain — the part immediately before the TLD — is <strong>secure-login.net</strong>. Amazon has no control over this site whatsoever.`,
-    tip: "💡 Tip: Read the domain right-to-left from the first single slash. The true domain is the last two (or three) dot-separated labels before that slash.",
+    why: `<strong>Subdomain spoofing:</strong> "amazon.com" appears at the start, but it's just a <em>subdomain</em>. The actual registered domain is <strong>secure-login.net</strong>. Amazon has no control over this site whatsoever.`,
+    tip: "Read the domain right-to-left from the first single slash. The true domain is the last two labels before that slash.",
     highlightSlice: { text: "secure-login.net", danger: true }
   },
+  // 4 — legit Google
   {
     url: "https://google.com",
     secure: true,
     answer: "real",
     registrableDomain: "google.com",
     registrableDanger: false,
-    why: `Clean, minimal, and legitimate. <strong>google.com</strong> is owned by Alphabet Inc. There are no suspicious subdomains, no lookalike characters, no extra domains appended. HTTPS is present.`,
-    tip: "💡 Tip: Short, clean URLs with no unexpected hyphens, numbers, or extra domains are a good sign — but always verify the exact domain name.",
+    why: `Clean, minimal, and legitimate. <strong>google.com</strong> is owned by Alphabet Inc. No suspicious subdomains, no lookalike characters, no extra domains.`,
+    tip: "Short clean URLs with no unexpected hyphens, numbers, or extra domains are a good sign — but always verify the exact spelling.",
     highlightSlice: { text: "google.com", danger: false }
   },
+  // 5 — hyphen trick
   {
     url: "https://www.paypal.com-secure-login.net/signin",
     secure: true,
     answer: "fake",
     registrableDomain: "com-secure-login.net",
     registrableDanger: true,
-    why: `<strong>Domain confusion via hyphens:</strong> "paypal.com" looks like it's there, but dots in the hostname separate labels — and hyphens do <em>not</em>. The actual registered domain is <strong>com-secure-login.net</strong>. "www.paypal" is just the subdomain prefix.`,
-    tip: "💡 Tip: Hyphens are part of the same domain label; only <em>dots</em> separate labels. Always find the last label before the TLD to identify the true domain.",
+    why: `<strong>Domain confusion via hyphens:</strong> "paypal.com" looks like it's there, but dots separate labels — hyphens do <em>not</em>. The actual registered domain is <strong>com-secure-login.net</strong>. "www.paypal" is just the subdomain prefix.`,
+    tip: "Hyphens are part of the same label; only dots separate labels. Always find the last label before the TLD.",
     highlightSlice: { text: "com-secure-login.net", danger: true }
   },
+  // 6 — legit GitHub
   {
     url: "https://github.com/torvalds/linux",
     secure: true,
     answer: "real",
     registrableDomain: "github.com",
     registrableDanger: false,
-    why: `This is the real GitHub repository for the Linux kernel, maintained by Linus Torvalds. The domain is <strong>github.com</strong> — legitimate — and the path <em>/torvalds/linux</em> follows GitHub's standard username/repo pattern.`,
-    tip: "💡 Tip: URL paths after the domain (like /username/repo) can be anything — only the domain itself tells you who actually controls the server.",
+    why: `This is the real GitHub repository for the Linux kernel. The domain is <strong>github.com</strong> and the path <em>/torvalds/linux</em> follows GitHub's standard username/repo pattern.`,
+    tip: "URL paths after the domain can be anything — only the domain itself tells you who controls the server.",
     highlightSlice: { text: "github.com", danger: false }
   },
+  // 7 — Punycode IDN homograph
   {
     url: "https://xn--pple-43d.com",
     secure: true,
@@ -575,19 +585,86 @@ const ROUNDS = [
     registrableDomain: "xn--pple-43d.com",
     registrableDanger: true,
     decodedNote: true,
-    why: `<strong>IDN homograph attack (Punycode):</strong> <code>xn--pple-43d.com</code> is the Punycode encoding of <strong>аpple.com</strong> — where the first "а" is the Cyrillic letter U+0430, not the Latin "a". They're visually identical in most fonts. Browsers sometimes show the decoded form, making this nearly undetectable.`,
-    tip: "💡 Tip: If a URL looks right but triggers a security warning, or you see 'xn--' in the raw address bar, investigate. Hover to see the actual encoded domain.",
+    why: `<strong>IDN homograph attack (Punycode):</strong> <code>xn--pple-43d.com</code> is the Punycode encoding of <strong>аpple.com</strong> — where the first "а" is the Cyrillic letter U+0430, not the Latin "a". Visually identical in most fonts. Browsers may show the decoded form, making this nearly undetectable.`,
+    tip: "If you see 'xn--' in the raw address bar, the domain contains non-ASCII characters — investigate before clicking.",
     highlightSlice: { text: "xn--pple-43d.com", danger: true }
   },
+  // 8 — subdomain spoofing .ru TLD
   {
     url: "https://accounts.google.com.phishing-site.ru/signin",
     secure: true,
     answer: "fake",
     registrableDomain: "phishing-site.ru",
     registrableDanger: true,
-    why: `<strong>Subdomain spoofing, classic form:</strong> "accounts.google.com" looks exactly like a real Google login URL — but it's just the subdomain. The actual registered domain is <strong>phishing-site.ru</strong>, a Russian-TLD site with zero connection to Google.`,
-    tip: "💡 Tip: Seeing a legitimate-looking name before the domain is a major red flag. Always verify the real domain by reading right-to-left from the first '/'.",
+    why: `<strong>Subdomain spoofing:</strong> "accounts.google.com" looks like a real Google login URL — but it's just the subdomain. The actual registered domain is <strong>phishing-site.ru</strong>, which has zero connection to Google.`,
+    tip: "Seeing a legitimate-looking name before the real domain is a major red flag. Always read right-to-left from the first '/'.",
     highlightSlice: { text: "phishing-site.ru", danger: true }
+  },
+  // 9 — legitimate Netflix
+  {
+    url: "https://www.netflix.com/in/login",
+    secure: true,
+    answer: "real",
+    registrableDomain: "netflix.com",
+    registrableDanger: false,
+    why: `Legitimate Netflix URL. <strong>netflix.com</strong> is owned by Netflix Inc. The <em>/in/</em> path segment is the India region selector — a normal Netflix URL pattern.`,
+    tip: "Country codes in the path (/in/, /us/) are normal and owned by the site — the domain is still the authority.",
+    highlightSlice: { text: "netflix.com", danger: false }
+  },
+  // 10 — zero vs letter O
+  {
+    url: "https://micros0ft.com/windows/activate",
+    secure: true,
+    answer: "fake",
+    registrableDomain: "micros0ft.com",
+    registrableDanger: true,
+    why: `<strong>Typosquatting:</strong> The letter <strong>"o"</strong> in "microsoft" is replaced with the digit <strong>"0"</strong> — giving <strong>micros0ft.com</strong>. This is a classic substitution attack. The real Microsoft domain is microsoft.com.`,
+    tip: "Zero (0) swapped for O and one (1) swapped for l are the most common digit-for-letter typosquatting tricks.",
+    highlightSlice: { text: "micros0ft.com", danger: true }
+  },
+  // 11 — open redirect disguise
+  {
+    url: "https://www.linkedin.com/redir/redirect?url=http://steal-credentials.com",
+    secure: true,
+    answer: "fake",
+    registrableDomain: "steal-credentials.com",
+    registrableDanger: true,
+    why: `<strong>Open redirect abuse:</strong> The URL starts with the real <em>linkedin.com</em> — but the <code>?url=</code> parameter redirects you to <strong>steal-credentials.com</strong>. The browser shows LinkedIn at first, then silently takes you to the attacker's site. This passes basic URL checkers.`,
+    tip: "Always check query parameters for redirect URLs. If a ?url=, ?next=, or ?redirect= parameter points somewhere unexpected, that's where you're actually going.",
+    highlightSlice: { text: "steal-credentials.com", danger: true }
+  },
+  // 12 — legit Stack Overflow
+  {
+    url: "https://stackoverflow.com/questions/927358",
+    secure: true,
+    answer: "real",
+    registrableDomain: "stackoverflow.com",
+    registrableDanger: false,
+    why: `Legitimate Stack Overflow question URL. <strong>stackoverflow.com</strong> is owned by Stack Exchange Inc. The numeric path is a question ID — a standard SO pattern.`,
+    tip: "Numeric IDs in paths are normal for most platforms. The domain is what matters — stackoverflow.com is safe.",
+    highlightSlice: { text: "stackoverflow.com", danger: false }
+  },
+  // 13 — extra TLD camouflage
+  {
+    url: "https://signin.apple.com.id-verify.xyz/appleid",
+    secure: true,
+    answer: "fake",
+    registrableDomain: "id-verify.xyz",
+    registrableDanger: true,
+    why: `<strong>Subdomain spoofing + unusual TLD:</strong> "signin.apple.com" looks like Apple's sign-in page, but it's a subdomain. The actual registered domain is <strong>id-verify.xyz</strong> — a throwaway .xyz domain with no connection to Apple. The .xyz TLD is cheap and commonly abused in phishing.`,
+    tip: "Unusual TLDs like .xyz, .top, .click, .tk combined with legitimate-looking subdomains are a strong phishing signal.",
+    highlightSlice: { text: "id-verify.xyz", danger: true }
+  },
+  // 14 — legitimate government
+  {
+    url: "https://www.incometax.gov.in/iec/foportal",
+    secure: true,
+    answer: "real",
+    registrableDomain: "gov.in",
+    registrableDanger: false,
+    why: `Legitimate Indian Income Tax department URL. The <strong>gov.in</strong> domain is exclusively issued to Indian government departments — it cannot be purchased by the public. The subdomain <em>incometax</em> is the official portal.`,
+    tip: "Government domains like .gov, .gov.in, .nic.in are controlled by government bodies and cannot be purchased by anyone else — they're reliable trust signals.",
+    highlightSlice: { text: "gov.in", danger: false }
   }
 ];
 
@@ -601,9 +678,10 @@ function renderRound() {
   answered = false;
 
   // Progress
-  const pct = (currentRound / 8) * 100;
+  const total = ROUNDS.length;
+  const pct = (currentRound / total) * 100;
   document.getElementById('progress-bar').style.width = pct + '%';
-  document.getElementById('progress-text').textContent = `Round ${currentRound + 1} of 8`;
+  document.getElementById('progress-text').textContent = `Round ${currentRound + 1} of ${total}`;
   document.getElementById('score-live').textContent = `Score: ${score}`;
   document.getElementById('round-chip').textContent = `Round ${currentRound + 1}`;
 
@@ -705,7 +783,7 @@ function answer(choice) {
 
   const btnNext = document.getElementById('btn-next');
   btnNext.style.display = 'block';
-  if (currentRound === 7) {
+  if (currentRound === ROUNDS.length - 1) {
     btnNext.textContent = 'See my results →';
   } else {
     btnNext.textContent = 'Next round →';
@@ -714,7 +792,7 @@ function answer(choice) {
 
 function nextRound() {
   currentRound++;
-  if (currentRound >= 8) {
+  if (currentRound >= ROUNDS.length) {
     showScore();
   } else {
     renderRound();
@@ -728,13 +806,14 @@ function showScore() {
   const screen = document.getElementById('score-screen');
   screen.style.display = 'block';
 
-  document.getElementById('score-big').textContent = score + ' / 8';
+  const total = ROUNDS.length;
+  document.getElementById('score-big').textContent = score + ' / ' + total;
 
   let emoji, msg;
-  if (score <= 3) {
+  if (score <= Math.floor(total * 0.4)) {
     emoji = '😬';
     msg = '"Keep practising — attackers count on this confusion"';
-  } else if (score <= 6) {
+  } else if (score <= Math.floor(total * 0.8)) {
     emoji = '🙂';
     msg = '"Good instincts — a few tricks slipped through"';
   } else {

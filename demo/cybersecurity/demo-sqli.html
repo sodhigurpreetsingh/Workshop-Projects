@@ -345,13 +345,27 @@
     }
     .result-panel .injected-query {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 0.74rem;
+      font-size: 0.8rem;
       background: var(--code-bg);
+      color: var(--code-fg);
       border-radius: 7px;
-      padding: 10px 12px;
-      line-height: 1.65;
+      padding: 14px 16px;
+      line-height: 1.8;
       white-space: pre-wrap;
       word-break: break-all;
+      border: 1px solid rgba(247,118,142,0.3);
+    }
+    .result-panel .injected-query-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--danger);
+      margin-top: 8px;
+      margin-bottom: 3px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
     }
 
     /* ── SAFE COLUMN NOTE ────────────────────────────────────────── */
@@ -586,8 +600,8 @@ function buildQueryHTML(user, pass) {
   function colorValue(raw) {
     if (!raw) return `<span class="tok-str">''</span>`;
     if (isInjection(raw)) {
-      // Split on SQL-significant tokens and highlight them red
-      return highlightInjected(raw);
+      // Opening quote in green, then the injected content highlighted
+      return `<span class="tok-str">'</span>` + highlightInjected(raw);
     }
     return `<span class="tok-str">'${esc(raw)}'</span>`;
   }
@@ -714,7 +728,7 @@ function vulnLogin() {
         &#x26A0;&#xFE0F;&nbsp;Attacker is now logged in as administrator
       </div>
       <div class="db-row">Returned row:<br>{ id: 1, username: <span style="color:var(--code-yellow)">'admin'</span>, email: <span style="color:var(--code-yellow)">'admin@corp.com'</span>, role: <span style="color:var(--code-red)">'superuser'</span> }</div>
-      <div style="font-size:0.72rem;color:#565f89;margin-top:2px;font-family:'JetBrains Mono',monospace;">Dangerous query that ran:</div>
+      <div class="injected-query-label">⚠ Dangerous query that ran:</div>
       <div class="injected-query">${buildQueryHTML(user, pass)}</div>`;
 
     if (isDropTable) {

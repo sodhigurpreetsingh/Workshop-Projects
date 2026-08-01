@@ -372,6 +372,48 @@
 <body>
 
 <!-- ══════════════════════════════════════════════════════════════
+     SETUP INSTRUCTIONS BANNER
+═══════════════════════════════════════════════════════════════ -->
+<div id="setup-banner" style="background:#1a1b26;color:#a9b1d6;font-family:'JetBrains Mono',monospace;font-size:.82rem;padding:16px 32px;border-bottom:2px solid #2d2e3f;line-height:1.8">
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:24px;flex-wrap:wrap">
+    <div>
+      <div style="color:#7aa2f7;font-weight:700;font-size:.88rem;margin-bottom:10px;letter-spacing:.04em">⚙ HOW TO RUN THIS AS A LIVE DEMO</div>
+      <div style="color:#565f89;margin-bottom:8px">Open a terminal in the folder containing this file, then run:</div>
+
+      <div style="background:#0d0e17;border-radius:8px;padding:14px 18px;margin-bottom:10px;display:inline-block;min-width:420px">
+        <div style="color:#565f89;font-size:.72rem;margin-bottom:6px"># Step 1 — navigate to the demo folder</div>
+        <div><span style="color:#9ece6a">cd</span> <span style="color:#e0af68">Projects/demo/cybersecurity</span></div>
+        <div style="margin-top:8px;color:#565f89;font-size:.72rem;margin-bottom:6px"># Step 2 — start a local HTTP server (pick one)</div>
+        <div><span style="color:#9ece6a">python3</span> <span style="color:#a9b1d6">-m http.server 8080</span>            <span style="color:#565f89"># Python 3 (recommended)</span></div>
+        <div style="color:#565f89;margin:2px 0 2px 0;font-size:.72rem">— or —</div>
+        <div><span style="color:#9ece6a">python</span> <span style="color:#a9b1d6">-m SimpleHTTPServer 8080</span>       <span style="color:#565f89"># Python 2</span></div>
+        <div style="color:#565f89;margin:2px 0 2px 0;font-size:.72rem">— or —</div>
+        <div><span style="color:#9ece6a">npx</span> <span style="color:#a9b1d6">serve . -p 8080</span>                   <span style="color:#565f89"># Node.js / npx</span></div>
+        <div style="margin-top:8px;color:#565f89;font-size:.72rem;margin-bottom:6px"># Step 3 — open in browser</div>
+        <div><span style="color:#7aa2f7">http://localhost:8080/demo-xss.html</span></div>
+      </div>
+
+      <div style="color:#f7768e;font-size:.78rem;margin-top:6px">⚠ Must be served over HTTP — opening as file:// blocks cookies and some payloads.</div>
+    </div>
+
+    <div style="min-width:220px">
+      <div style="color:#9ece6a;font-weight:700;font-size:.82rem;margin-bottom:8px">✓ What each button does</div>
+      <div style="color:#a9b1d6;line-height:2">
+        <span style="color:#565f89">1.</span> Basic alert — <span style="color:#e0af68">alert() pops immediately</span><br>
+        <span style="color:#565f89">2.</span> Cookie theft — <span style="color:#e0af68">reads &amp; displays session cookie</span><br>
+        <span style="color:#565f89">3.</span> Style injection — <span style="color:#e0af68">full-page takeover overlay</span><br>
+        <span style="color:#565f89">4.</span> Phishing form — <span style="color:#e0af68">fake login captures credentials</span>
+      </div>
+      <div style="margin-top:12px;color:#9ece6a;font-weight:700;font-size:.82rem;margin-bottom:6px">✓ Safe side (right panel)</div>
+      <div style="color:#a9b1d6">Same payload — rendered as plain text.<br>Tags visible, no code executed.</div>
+    </div>
+  </div>
+  <div style="margin-top:12px;text-align:right">
+    <button onclick="document.getElementById('setup-banner').style.display='none'" style="background:#2d2e3f;color:#a9b1d6;border:1px solid #3d3e50;padding:5px 16px;border-radius:6px;cursor:pointer;font-family:'JetBrains Mono',monospace;font-size:.78rem">Hide instructions ✕</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
      HEADER
 ═══════════════════════════════════════════════════════════════ -->
 <header class="page-header">
@@ -384,15 +426,10 @@
 ═══════════════════════════════════════════════════════════════ -->
 <div class="payload-bar">
   <label>Quick Payloads:</label>
-  <button class="chip" onclick="setPayload(`<img src=x onerror=alert('XSS!')>`)">
-    1. Basic alert
-  </button>
-  <button class="chip" onclick="setPayload(`<img src=x onerror=\"alert('Stolen cookie: '+document.cookie)\">`)">
-    2. Cookie theft
-  </button>
-  <button class="chip" onclick="setPayload(`<b style=\"font-size:3em;color:red\">HACKED</b>`)">
-    3. Style injection
-  </button>
+  <button class="chip" onclick="setPayload('alert')">1. Basic alert</button>
+  <button class="chip" onclick="setPayload('cookie')">2. Cookie theft</button>
+  <button class="chip" onclick="setPayload('style')">3. Style injection</button>
+  <button class="chip" onclick="setPayload('phishing')">4. Phishing form</button>
 </div>
 
 <!-- ══════════════════════════════════════════════════════════════
@@ -542,23 +579,74 @@ commentsContainer.appendChild(commentDiv);</pre>
      JAVASCRIPT
 ═══════════════════════════════════════════════════════════════ -->
 <script>
-  // ── Pre-fill both textareas on load ──────────────────────────
-  const DEFAULT_PAYLOAD = `<img src=x onerror="alert('XSS! Cookie: ' + document.cookie)">`;
+  // ── Fake session cookie (safe to display in a classroom demo) ─
+  document.cookie = 'session_id=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.abc123; path=/';
 
-  document.getElementById('vuln-textarea').value = DEFAULT_PAYLOAD;
-  document.getElementById('safe-textarea').value = DEFAULT_PAYLOAD;
+  // ── Payload library — keyed so HTML attributes stay quote-free ─
+  const PAYLOADS = {
+    alert:    `<img src=x onerror="alert('XSS! This script ran from a comment.')">`,
+    cookie:   `<img src=x onerror="showExfil(document.cookie)">`,
+    style:    `<div style="position:fixed;inset:0;background:#000;color:#0f0;font-family:monospace;display:flex;align-items:center;justify-content:center;font-size:2rem;z-index:99999;flex-direction:column;gap:16px"><div style="font-size:3rem">💀 HACKED</div><div style="font-size:1rem;opacity:.7">Attacker injected this via a blog comment</div><button onclick="this.closest('div').remove()" style="margin-top:12px;padding:10px 24px;background:#0f0;color:#000;border:none;border-radius:6px;font-size:1rem;cursor:pointer">Dismiss</button></div>`,
+    phishing: `<div style="position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:99999;display:flex;align-items:center;justify-content:center"><div style="background:#fff;padding:32px;border-radius:12px;width:320px;font-family:sans-serif"><h2 style="margin:0 0 8px;font-size:1.1rem">Session expired — please log in again</h2><p style="font-size:.8rem;color:#666;margin:0 0 16px">Your session has timed out for security reasons.</p><input placeholder="Email" style="width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;margin-bottom:8px;box-sizing:border-box"><input type="password" placeholder="Password" style="width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;margin-bottom:12px;box-sizing:border-box"><button onclick="captureCredentials(this)" style="width:100%;padding:10px;background:#4f46e5;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:.95rem">Log in</button><p style="font-size:.7rem;color:#aaa;text-align:center;margin-top:8px">Injected into this page via XSS</p></div></div>`,
+  };
 
-  // ── Quick payload chips ────────────────────────────────────
-  function setPayload(text) {
-    document.getElementById('vuln-textarea').value = text;
-    document.getElementById('safe-textarea').value = text;
+  // ── Pre-fill textareas on load ─────────────────────────────
+  document.getElementById('vuln-textarea').value = PAYLOADS.alert;
+  document.getElementById('safe-textarea').value = PAYLOADS.alert;
+
+  // ── Chip click: populate both textareas, let student post manually ─
+  function setPayload(key) {
+    const payload = PAYLOADS[key];
+    if (!payload) return;
+    document.getElementById('vuln-textarea').value = payload;
+    document.getElementById('safe-textarea').value = payload;
+    document.getElementById('vuln-textarea').focus();
+  }
+
+  // ── Cookie exfil visualiser (replaces alert for cookie demo) ─
+  function showExfil(cookieStr) {
+    const existing = document.getElementById('exfil-modal');
+    if (existing) existing.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'exfil-modal';
+    modal.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#1a1b26;color:#a9b1d6;font-family:JetBrains Mono,monospace;font-size:.85rem;padding:28px 32px;border-radius:12px;z-index:99999;min-width:380px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,.6)';
+    modal.innerHTML = `
+      <div style="color:#f7768e;font-weight:700;font-size:1rem;margin-bottom:16px">⚠ Cookie Stolen — Exfiltration Simulated</div>
+      <div style="margin-bottom:8px;color:#565f89;font-size:.75rem;text-transform:uppercase;letter-spacing:.08em">Captured via document.cookie</div>
+      <div style="background:#0d0e17;padding:12px 16px;border-radius:8px;word-break:break-all;color:#9ece6a;margin-bottom:20px">${cookieStr || '(no cookies set)'}</div>
+      <div style="color:#565f89;font-size:.78rem;line-height:1.6;margin-bottom:20px">In a real attack this value would be sent to <span style="color:#7aa2f7">https://attacker.com/steal?c=...</span> giving the attacker full session access.</div>
+      <button onclick="document.getElementById('exfil-modal').remove()" style="background:#4f46e5;color:#fff;border:none;padding:8px 20px;border-radius:6px;cursor:pointer;font-size:.85rem">Close</button>
+    `;
+    document.body.appendChild(modal);
+    showBanner('danger', '🚨 Cookie stolen! Attacker now has your session token.');
+  }
+
+  // ── Phishing credential capture ────────────────────────────
+  function captureCredentials(btn) {
+    const form = btn.closest('div');
+    const email = form.querySelector('input[placeholder="Email"]').value || 'student@cu.edu';
+    const pass  = form.querySelector('input[type="password"]').value  || '(empty)';
+    btn.closest('div[style*="rgba"]').remove();
+
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#1a1b26;color:#a9b1d6;font-family:JetBrains Mono,monospace;font-size:.85rem;padding:28px 32px;border-radius:12px;z-index:99999;min-width:340px;box-shadow:0 20px 60px rgba(0,0,0,.6)';
+    modal.innerHTML = `
+      <div style="color:#f7768e;font-weight:700;font-size:1rem;margin-bottom:16px">📨 Credentials Captured</div>
+      <div style="background:#0d0e17;padding:12px 16px;border-radius:8px;margin-bottom:20px;line-height:2">
+        <span style="color:#565f89">email:</span> <span style="color:#9ece6a">${email}</span><br>
+        <span style="color:#565f89">password:</span> <span style="color:#f7768e">${pass}</span>
+      </div>
+      <div style="color:#565f89;font-size:.78rem;line-height:1.6;margin-bottom:20px">The fake login form above was injected by a comment. Victim typed into the attacker's form — not the real site.</div>
+      <button onclick="this.closest('div[style]').remove()" style="background:#4f46e5;color:#fff;border:none;padding:8px 20px;border-radius:6px;cursor:pointer;font-size:.85rem">Close</button>
+    `;
+    document.body.appendChild(modal);
   }
 
   // ── Banner helper ──────────────────────────────────────────
   let bannerTimeout = null;
 
   function showBanner(type, message) {
-    // Remove any existing banner
     const existing = document.querySelector('.banner');
     if (existing) existing.remove();
     if (bannerTimeout) clearTimeout(bannerTimeout);
@@ -575,7 +663,7 @@ commentsContainer.appendChild(commentDiv);</pre>
   }
 
   // ── Build comment wrapper ──────────────────────────────────
-  function buildCommentWrapper(authorName) {
+  function buildCommentWrapper() {
     const wrapper = document.createElement('div');
     wrapper.className = 'comment';
     const authorEl = document.createElement('div');
@@ -592,18 +680,14 @@ commentsContainer.appendChild(commentDiv);</pre>
     if (!userInput) return;
 
     const container = document.getElementById('vuln-comments');
-    const wrapper = buildCommentWrapper('Anonymous');
-
-    // ⚠ Intentionally vulnerable — innerHTML executes embedded scripts
+    const wrapper = buildCommentWrapper();
     const contentSpan = document.createElement('span');
-    contentSpan.innerHTML = userInput;   // THE VULNERABLE LINE
+    contentSpan.innerHTML = userInput;   // ⚠ THE VULNERABLE LINE
     wrapper.appendChild(contentSpan);
-
     container.appendChild(wrapper);
     textarea.value = '';
 
-    // Show the danger banner AFTER rendering (alert may have already fired)
-    showBanner('danger', '🚨 XSS Executed! An attacker\'s script just ran in your browser.');
+    showBanner('danger', '🚨 XSS injected! Attacker script ran inside this page.');
   }
 
   // ── SAFE: textContent ──────────────────────────────────────
@@ -613,20 +697,17 @@ commentsContainer.appendChild(commentDiv);</pre>
     if (!userInput) return;
 
     const container = document.getElementById('safe-comments');
-    const wrapper = buildCommentWrapper('Anonymous');
-
-    // ✓ Safe — textContent never parses HTML
+    const wrapper = buildCommentWrapper();
     const contentSpan = document.createElement('span');
-    contentSpan.textContent = userInput;   // THE SAFE LINE
+    contentSpan.textContent = userInput;   // ✓ THE SAFE LINE
     wrapper.appendChild(contentSpan);
-
     container.appendChild(wrapper);
     textarea.value = '';
 
-    showBanner('safe', '✓ Input safely escaped — no script execution possible');
+    showBanner('safe', '✓ Input escaped — tag rendered as literal text, no script ran');
   }
 
-  // ── Allow Enter key (Shift+Enter for newline) ──────────────
+  // ── Enter key shortcut ─────────────────────────────────────
   document.getElementById('vuln-textarea').addEventListener('keydown', e => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); postVulnComment(); }
   });
